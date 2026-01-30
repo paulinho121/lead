@@ -20,7 +20,7 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
   const [statusMessage, setStatusMessage] = useState('');
   const [log, setLog] = useState<{ type: 'info' | 'error' | 'success', msg: string }[]>([]);
   const [activeMode, setActiveMode] = useState<'pdf' | 'web'>('pdf');
-  const [searchParams, setSearchParams] = useState({ keywords: '', location: '' });
+  const [searchParams, setSearchParams] = useState({ keywords: '', location: '', niche: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addLog = (type: 'info' | 'error' | 'success', msg: string) => {
@@ -135,7 +135,7 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
     setIsProcessing(true);
     setProgress(10);
     setLog([]);
-    addLog('info', `Iniciando Busca Inteligente: "${searchParams.keywords}" em ${searchParams.location || 'Brasil'}`);
+    addLog('info', `Iniciando Busca Inteligente: "${searchParams.keywords}"${searchParams.niche ? ` [Nicho: ${searchParams.niche}]` : ''} em ${searchParams.location || 'Brasil'}`);
     setStatusMessage('Rastreando fontes web...');
 
     try {
@@ -276,14 +276,23 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
                 <p className="text-slate-500 text-sm">Encontre leads novos na internet usando palavras-chave e localização.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">O que você busca?</label>
                   <input
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-sm font-bold"
-                    placeholder="Ex: Clínicas Odontológicas, Restaurantes..."
+                    placeholder="Ex: Clínicas, Restaurantes..."
                     value={searchParams.keywords}
                     onChange={e => setSearchParams({ ...searchParams, keywords: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Nicho / Segmento</label>
+                  <input
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-sm font-bold"
+                    placeholder="Ex: Odontologia, Pets..."
+                    value={searchParams.niche}
+                    onChange={e => setSearchParams({ ...searchParams, niche: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">

@@ -20,6 +20,7 @@ export interface Lead {
   contacted?: boolean;
   contactResponse?: string;
   observations?: string;
+  niche?: string;
 }
 
 export interface EnrichmentData {

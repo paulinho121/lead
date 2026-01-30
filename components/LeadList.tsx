@@ -14,7 +14,9 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
   const filteredLeads = leads.filter(l =>
     l.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.cnpj.includes(searchTerm) ||
-    (l.email && l.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    (l.email && l.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (l.niche && l.niche.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (l.atividadePrincipal && l.atividadePrincipal.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const exportCSV = () => {
