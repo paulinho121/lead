@@ -12,6 +12,7 @@ import { Download, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import { leadService } from './services/dbService';
 import { backgroundEnricher } from './services/backgroundEnricher';
 import { Sun, Moon } from 'lucide-react';
+import { Analytics } from "@vercel/analytics/react"
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
@@ -210,6 +211,7 @@ const App: React.FC = () => {
           {activeTab === AppTab.STRATEGY && <Strategy leads={leads} />}
         </div>
       </main>
+      <Analytics />
     </div>
   );
 };
