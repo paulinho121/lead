@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Filter, Download, Mail, Phone, MapPin, ExternalLink, Instagram } from 'lucide-react';
+import { Search, Filter, Download, Mail, Phone, MapPin, Instagram, Globe, Facebook } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
 
 interface LeadListProps {
@@ -93,17 +93,6 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-slate-700 line-clamp-1">{lead.razaoSocial}</span>
-                          {lead.website && (
-                            <a
-                              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-500 hover:text-blue-600"
-                              title={lead.website}
-                            >
-                              <ExternalLink size={14} />
-                            </a>
-                          )}
                         </div>
                         <span className="text-xs text-slate-400 font-mono mt-1">{lead.cnpj}</span>
                       </div>
@@ -164,26 +153,49 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {lead.instagram && (
-                          <a
-                            href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-slate-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"
-                            title="Ver Instagram"
-                          >
-                            <Instagram size={16} />
-                          </a>
-                        )}
+                      <div className="flex justify-end gap-1">
+                        {/* Google Search */}
                         <a
                           href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Ver no Google"
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Buscar no Google"
                         >
-                          <ExternalLink size={16} />
+                          <Search size={16} />
+                        </a>
+
+                        {/* Website */}
+                        <a
+                          href={lead.website ? (lead.website.startsWith('http') ? lead.website : `https://${lead.website}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' site oficial')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`p-2 rounded-lg transition-all ${lead.website ? 'text-blue-500 hover:bg-blue-50' : 'text-slate-300 hover:text-slate-400 hover:bg-slate-50'}`}
+                          title={lead.website ? 'Ver Site' : 'Buscar Site'}
+                        >
+                          <Globe size={16} />
+                        </a>
+
+                        {/* Instagram */}
+                        <a
+                          href={lead.instagram ? (lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' instagram')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`p-2 rounded-lg transition-all ${lead.instagram ? 'text-pink-500 bg-pink-50 hover:bg-pink-100' : 'text-pink-400 hover:text-pink-600 hover:bg-pink-50'}`}
+                          title={lead.instagram ? 'Ver Instagram' : 'Buscar Instagram'}
+                        >
+                          <Instagram size={16} />
+                        </a>
+
+                        {/* Facebook */}
+                        <a
+                          href={lead.facebook ? (lead.facebook.startsWith('http') ? lead.facebook : `https://facebook.com/${lead.facebook}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' facebook')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`p-2 rounded-lg transition-all ${lead.facebook ? 'text-indigo-500 bg-indigo-50 hover:bg-indigo-100' : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                          title={lead.facebook ? 'Ver Facebook' : 'Buscar Facebook'}
+                        >
+                          <Facebook size={16} />
                         </a>
                       </div>
                     </td>

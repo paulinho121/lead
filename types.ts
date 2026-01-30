@@ -22,6 +22,7 @@ export interface Lead {
   contactResponse?: string;
   observations?: string;
   niche?: string;
+  facebook?: string;
 }
 
 export interface EnrichmentData {
