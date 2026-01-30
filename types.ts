@@ -10,6 +10,7 @@ export interface Lead {
   uf?: string;
   email?: string;
   telefone?: string;
+  website?: string;
   status: 'pending' | 'processing' | 'enriched' | 'failed';
   error?: string;
   source: string;
@@ -29,6 +30,7 @@ export interface EnrichmentData {
   cnpj: string;
   email: string;
   telefone: string;
+  website?: string;
   municipio: string;
   uf: string;
   cnae_fiscal_descricao: string;

@@ -233,6 +233,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
                     </table>
                 </div>
             </div>
+
+            <div className="bg-[var(--bg-card)] rounded-[32px] border border-red-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-red-100 flex items-center justify-between bg-red-50/30">
+                    <h3 className="font-bold text-red-700 flex items-center gap-2">
+                        <ShieldAlert size={20} />
+                        Zona de Perigo (Ações Destrutivas)
+                    </h3>
+                </div>
+                <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h4 className="font-bold text-slate-900">Zerar Banco de Dados de Leads</h4>
+                        <p className="text-sm text-slate-500 max-w-md">
+                            Esta ação removerá <strong>todos os leads ({stats.total})</strong> permanentemente.
+                            Use isto para recomeçar o processo de captura do zero com os novos padrões.
+                        </p>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (window.confirm('🚨 TEM CERTEZA? Esta ação não pode ser desfeita e TODOS os leads serão apagados permanentemente.')) {
+                                try {
+                                    setIsLoading(true);
+                                    await leadService.clearAllLeads();
+                                    alert('Banco de dados zerado com sucesso! Recarregando...');
+                                    window.location.reload();
+                                } catch (error) {
+                                    alert('Erro ao zerar banco: ' + (error as any).message);
+                                } finally {
+                                    setIsLoading(false);
+                                }
+                            }
+                        }}
+                        className="px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-200 flex items-center gap-2"
+                    >
+                        <ShieldAlert size={20} />
+                        ZERAR E RECOMEÇAR TUDO
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

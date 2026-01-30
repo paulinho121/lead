@@ -171,7 +171,9 @@ export const leadService = {
             observations: lead.observations,
             situacao_cadastral: lead.situacaoCadastral,
             instagram: lead.instagram,
-            user_id: lead.userId
+            user_id: lead.userId,
+            niche: lead.niche,
+            website: lead.website
         };
     },
 
@@ -195,7 +197,9 @@ export const leadService = {
             observations: dbLead.observations,
             situacaoCadastral: dbLead.situacao_cadastral,
             instagram: dbLead.instagram,
-            userId: dbLead.user_id
+            userId: dbLead.user_id,
+            niche: dbLead.niche,
+            website: dbLead.website
         };
     }
 };

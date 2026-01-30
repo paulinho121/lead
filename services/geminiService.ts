@@ -64,3 +64,31 @@ export const discoverEmail = async (razaoSocial: string, cnpj: string) => {
     return null;
   }
 };
+
+export const extractContactFromWeb = async (razaoSocial: string, webContent: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: `Analise o conteúdo do site oficial da empresa "${razaoSocial}" e extraia o e-mail de contato e o e-mail comercial. 
+      Conteúdo do site:
+      ${webContent.substring(0, 30000)}
+      Retorne APENAS um JSON com os campos "email" e "telefone" (se encontrados).`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            email: { type: Type.STRING },
+            telefone: { type: Type.STRING }
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error("Gemini Web Extraction Error:", error);
+    return null;
+  }
+};
+

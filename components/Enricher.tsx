@@ -82,7 +82,8 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
             telefone: item.telefone ? normalizePhone(item.telefone) : undefined,
             status: 'pending' as const,
             source: file.name,
-            capturedAt: new Date().toISOString()
+            capturedAt: new Date().toISOString(),
+            niche: searchParams.niche
           });
         }
       });
@@ -97,6 +98,7 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
             status: 'pending' as const,
             source: file.name,
             capturedAt: new Date().toISOString(),
+            niche: searchParams.niche
           });
         }
       });
@@ -209,6 +211,23 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Upload Zone */}
         <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1 w-full">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Nicho / Segmento do Lote</label>
+              <input
+                type="text"
+                placeholder="Ex: Clínicas Odontológicas, Restaurantes..."
+                value={searchParams.niche}
+                onChange={(e) => setSearchParams({ ...searchParams, niche: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+              />
+            </div>
+            <div className="text-center md:text-left">
+              <span className="text-[8px] text-slate-400 uppercase font-black block mb-1">Dica</span>
+              <p className="text-[10px] text-slate-500 leading-tight">Defina o nicho antes do upload para facilitar a <br /> filtragem e automação no CRM.</p>
+            </div>
+          </div>
+
           {activeMode === 'pdf' ? (
             <div
               onClick={() => !isProcessing && fileInputRef.current?.click()}

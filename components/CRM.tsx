@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Phone, MessageSquare, StickyNote, CheckCircle2, Circle, Save, MoreHorizontal, ExternalLink, Instagram, Facebook } from 'lucide-react';
+import { Search, Phone, MessageSquare, StickyNote, CheckCircle2, Circle, Save, MoreHorizontal, ExternalLink, Instagram, Facebook, Globe } from 'lucide-react';
 
 interface CRMProps {
     leads: Lead[];
@@ -35,7 +35,8 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
         email: string;
         instagram: string;
         niche: string;
-    }>({ contactResponse: '', observations: '', email: '', instagram: '', niche: '' });
+        website: string;
+    }>({ contactResponse: '', observations: '', email: '', instagram: '', niche: '', website: '' });
 
     const states = Array.from(new Set(leads.map(l => l.uf).filter(Boolean))).sort();
 
@@ -83,7 +84,8 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
             observations: lead.observations || '',
             email: lead.email || '',
             instagram: lead.instagram || '',
-            niche: lead.niche || ''
+            niche: lead.niche || '',
+            website: lead.website || ''
         });
     };
 
@@ -95,6 +97,7 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
             email: editValues.email,
             instagram: editValues.instagram,
             niche: editValues.niche,
+            website: editValues.website,
             contacted: true
         });
         setEditingId(null);
@@ -285,6 +288,19 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                     <MessageSquare size={14} className="text-slate-400" />
                                                     {lead.email || <span className="text-slate-300 italic">Sem email</span>}
                                                 </div>
+                                                {lead.website && (
+                                                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                                                        <ExternalLink size={14} className="text-blue-400" />
+                                                        <a
+                                                            href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="hover:underline font-bold truncate max-w-[200px]"
+                                                        >
+                                                            {lead.website.replace('https://', '').replace('http://', '').split('/')[0]}
+                                                        </a>
+                                                    </div>
+                                                )}
                                                 {lead.instagram && (
                                                     <div className="flex items-center gap-2 text-sm">
                                                         <Instagram size={16} className="text-pink-600" />
@@ -303,13 +319,15 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                 <div className="flex flex-wrap items-center gap-2 text-sm mt-3">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-1">Buscar Dados Faltantes:</span>
                                                     <a
-                                                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
+                                                        href={lead.website ? (lead.website.startsWith('http') ? lead.website : `https://${lead.website}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-[10px] hover:bg-blue-100 transition-colors border border-blue-100"
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors border ${lead.website
+                                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
+                                                            : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`}
                                                     >
-                                                        <ExternalLink size={12} />
-                                                        SITE / GOOGLE
+                                                        <Globe size={12} />
+                                                        {lead.website ? 'SITE OFICIAL' : 'SITE / GOOGLE'}
                                                     </a>
                                                     <a
                                                         href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' instagram')}`}
@@ -396,14 +414,25 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Nicho / Segmento</label>
-                                                        <input
-                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                                            placeholder="Ex: Tecnologia, Saúde..."
-                                                            value={editValues.niche}
-                                                            onChange={(e) => setEditValues({ ...editValues, niche: e.target.value })}
-                                                        />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Nicho / Segmento</label>
+                                                            <input
+                                                                className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                placeholder="Ex: Tecnologia, Saúde..."
+                                                                value={editValues.niche}
+                                                                onChange={(e) => setEditValues({ ...editValues, niche: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Site Oficial</label>
+                                                            <input
+                                                                className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                placeholder="www.empresa.com.br"
+                                                                value={editValues.website}
+                                                                onChange={(e) => setEditValues({ ...editValues, website: e.target.value })}
+                                                            />
+                                                        </div>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button

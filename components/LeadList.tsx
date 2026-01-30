@@ -16,6 +16,7 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
     l.cnpj.includes(searchTerm) ||
     (l.email && l.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (l.niche && l.niche.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (l.website && l.website.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (l.atividadePrincipal && l.atividadePrincipal.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -90,7 +91,20 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
                   <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-700 line-clamp-1">{lead.razaoSocial}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-700 line-clamp-1">{lead.razaoSocial}</span>
+                          {lead.website && (
+                            <a
+                              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-600"
+                              title={lead.website}
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
                         <span className="text-xs text-slate-400 font-mono mt-1">{lead.cnpj}</span>
                       </div>
                     </td>

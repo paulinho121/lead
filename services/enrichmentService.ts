@@ -21,6 +21,7 @@ export const fetchCNPJData = async (cnpj: string): Promise<EnrichmentData | null
         telefone: data.ddd_telefone_1 || data.telefone || '',
         municipio: data.municipio || '',
         uf: data.uf || '',
+        website: data.website || '',
         cnae_fiscal_descricao: data.cnae_fiscal_descricao || 'N/A',
         situacao_cadastral: data.descricao_situacao_cadastral || 'ATIVA'
       };
@@ -42,6 +43,7 @@ export const fetchCNPJData = async (cnpj: string): Promise<EnrichmentData | null
                 telefone: dataWS.telefone || '',
                 municipio: dataWS.municipio || '',
                 uf: dataWS.uf || '',
+                website: '',
                 cnae_fiscal_descricao: dataWS.atividade_principal?.[0]?.text || '',
                 situacao_cadastral: dataWS.situacao || 'ATIVA'
               };
@@ -73,6 +75,7 @@ export const fetchCNPJData = async (cnpj: string): Promise<EnrichmentData | null
               telefone: dataWS.estabelecimento?.telefone1 || '',
               municipio: dataWS.estabelecimento?.cidade?.nome || '',
               uf: dataWS.estabelecimento?.estado?.sigla || '',
+              website: '',
               cnae_fiscal_descricao: dataWS.estabelecimento?.atividade_principal?.descricao || '',
               situacao_cadastral: dataWS.estabelecimento?.situacao_cadastral || 'ATIVA'
             };

@@ -2,7 +2,8 @@
 import { Lead } from '../types';
 import { fetchCNPJData } from './enrichmentService';
 import { normalizeEmail, normalizePhone } from '../constants';
-import { parseUnstructuredText, discoverEmail } from './geminiService';
+import { parseUnstructuredText, discoverEmail, extractContactFromWeb } from './geminiService';
+import { firecrawlService } from './firecrawlService';
 
 export const backgroundEnricher = {
     async processLeads(
@@ -22,14 +23,40 @@ export const backgroundEnricher = {
             try {
                 onLog('info', `[${count}/${total}] Processando ${lead.cnpj}...`);
                 const data = await fetchCNPJData(lead.cnpj);
+                let scWebsite = '';
 
                 if (data) {
                     let email = data.email;
+                    let telefone = data.telefone;
 
-                    // IF API has NO email, try Gemini discovery
+                    // IF API has NO email, try Scraping + IA
                     if (!email) {
-                        onLog('info', `IA buscando email para ${data.razao_social}...`);
-                        email = await discoverEmail(data.razao_social, lead.cnpj);
+                        onLog('info', `IA buscando site oficial para ${data.razao_social}...`);
+                        const scrap = await firecrawlService.searchAndScrape(data.razao_social, lead.cnpj);
+
+                        if (scrap?.website) {
+                            onLog('success', `Site oficial mapeado: ${scrap.website}`);
+                            scWebsite = scrap.website;
+
+                            if ((scrap as any).markdown) {
+                                onLog('info', 'Extraindo contatos do conteúdo do site...');
+                                const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown);
+                                if (extra?.email) {
+                                    email = extra.email;
+                                    onLog('success', `E-mail encontrado via Scraping: ${email}`);
+                                }
+                                if (extra?.telefone && !telefone) {
+                                    telefone = extra.telefone;
+                                    onLog('success', `Telefone extraído do site: ${telefone}`);
+                                }
+                            }
+                        }
+
+                        // Fallback to normal Gemini discovery if still no email
+                        if (!email) {
+                            onLog('info', `Gemini tentando dedução para ${data.razao_social}...`);
+                            email = await discoverEmail(data.razao_social, lead.cnpj);
+                        }
                     }
 
                     const enrichedLead: Lead = {
@@ -37,7 +64,8 @@ export const backgroundEnricher = {
                         razaoSocial: data.razao_social,
                         nomeFantasia: data.nome_fantasia,
                         email: email ? normalizeEmail(email) : undefined,
-                        telefone: data.telefone ? normalizePhone(data.telefone) : undefined,
+                        telefone: telefone ? normalizePhone(telefone) : undefined,
+                        website: scWebsite || data.website,
                         municipio: data.municipio,
                         uf: data.uf,
                         atividadePrincipal: data.cnae_fiscal_descricao,
