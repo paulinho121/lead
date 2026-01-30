@@ -15,6 +15,7 @@ export interface Lead {
   source: string;
   capturedAt: string;
   instagram?: string;
+  userId?: string;
   // CRM fields
   contacted?: boolean;
   contactResponse?: string;
@@ -38,5 +39,6 @@ export enum AppTab {
   LEADS = 'leads',
   ENRICH = 'enrich',
   CRM = 'crm',
-  STRATEGY = 'strategy'
+  STRATEGY = 'strategy',
+  ADMIN = 'admin'
 }

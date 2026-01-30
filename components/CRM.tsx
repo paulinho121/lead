@@ -69,30 +69,30 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Organização de Leads (CRM)</h2>
-                    <p className="text-slate-500">Gerencie contatos, respostas e observações dos seus leads.</p>
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="text-center md:text-left">
+                    <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Organização de Leads (CRM)</h2>
+                    <p className="text-[var(--text-muted)] text-sm">Gerencie contatos, respostas e observações dos seus leads.</p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
                     <select
                         value={selectedState}
                         onChange={(e) => setSelectedState(e.target.value)}
-                        className="px-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-slate-700"
+                        className="w-full sm:w-48 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm font-bold text-[var(--text-main)]"
                     >
-                        <option value="all">Todos os Estados (UF)</option>
+                        <option value="all">Filtro por UF</option>
                         {states.map(state => (
                             <option key={state} value={state}>{state}</option>
                         ))}
                     </select>
 
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <div className="relative w-full sm:flex-1 md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
                         <input
                             type="text"
                             placeholder="Buscar empresa ou CNPJ..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm text-[var(--text-main)]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -138,23 +138,23 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                 <div className="flex flex-col lg:flex-row gap-6">
                                     {/* Lead Info */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex items-center gap-3">
+                                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
+                                            <div className="flex items-start gap-3 w-full">
                                                 <button
                                                     onClick={() => toggleContacted(lead)}
-                                                    className={`flex-shrink-0 transition-colors ${lead.contacted ? 'text-emerald-500' : 'text-slate-300 hover:text-blue-500'}`}
+                                                    className={`flex-shrink-0 mt-1 transition-colors ${lead.contacted ? 'text-emerald-500' : 'text-slate-300 hover:text-[var(--primary)]'}`}
                                                 >
                                                     {lead.contacted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                                                 </button>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-800 truncate">{lead.razaoSocial}</h3>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                        <span>CNPJ: {lead.cnpj}</span>
-                                                        <span>•</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-bold text-[var(--text-main)] text-base md:text-lg truncate">{lead.razaoSocial}</h3>
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-muted)]">
+                                                        <span className="font-medium">CNPJ: {lead.cnpj}</span>
+                                                        <span className="hidden sm:inline">•</span>
                                                         <span>{lead.municipio}/{lead.uf}</span>
                                                         {lead.situacaoCadastral && (
                                                             <>
-                                                                <span>•</span>
+                                                                <span className="hidden sm:inline">•</span>
                                                                 <span className={`font-bold ${lead.situacaoCadastral.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
                                                                     {lead.situacaoCadastral}
                                                                 </span>
@@ -163,13 +163,13 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${lead.contacted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                            <div className="flex sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${lead.contacted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
                                                     }`}>
                                                     {lead.contacted ? 'Contactado' : 'Pendente'}
                                                 </span>
                                                 {lead.situacaoCadastral?.includes('BAIXADA') && (
-                                                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 animate-pulse">
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700 animate-pulse">
                                                         Empresa Baixada
                                                     </span>
                                                 )}

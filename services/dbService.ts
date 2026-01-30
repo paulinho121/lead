@@ -17,6 +17,39 @@ export const leadService = {
         return (data || []).map(leadService.mapFromDb);
     },
 
+    async getAdminLeads(): Promise<Lead[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('leads')
+            .select('*');
+
+        if (error) {
+            console.error('Error fetching admin leads:', error);
+            return [];
+        }
+        return (data || []).map(leadService.mapFromDb);
+    },
+
+    async getAllProfiles(): Promise<any[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*');
+        if (error) return [];
+        return data || [];
+    },
+
+    async requestNewLeads(vendedorId: string): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase.rpc('solicitar_novos_leads', {
+            vendedor_id: vendedorId
+        });
+        if (error) {
+            console.error('Error requesting leads:', error);
+            throw error;
+        }
+    },
+
     async upsertLeads(leads: Lead[]): Promise<void> {
         if (!supabase) return;
         const dbLeads = leads.map(leadService.mapToDb);
@@ -75,7 +108,8 @@ export const leadService = {
             contact_response: lead.contactResponse,
             observations: lead.observations,
             situacao_cadastral: lead.situacaoCadastral,
-            instagram: lead.instagram
+            instagram: lead.instagram,
+            user_id: lead.userId
         };
     },
 
@@ -98,7 +132,8 @@ export const leadService = {
             contactResponse: dbLead.contact_response,
             observations: dbLead.observations,
             situacaoCadastral: dbLead.situacao_cadastral,
-            instagram: dbLead.instagram
+            instagram: dbLead.instagram,
+            userId: dbLead.user_id
         };
     }
 };

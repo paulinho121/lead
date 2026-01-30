@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, FileSearch, BookOpen, PhoneCall, Mail } from 'lucide-react';
+import { LayoutDashboard, Users, FileSearch, BookOpen, PhoneCall, Mail, ShieldAlert } from 'lucide-react';
 
 export const COLORS = {
   primary: '#00A38E',
@@ -16,6 +16,7 @@ export const NAVIGATION = [
   { id: 'enrich', name: 'Enriquecer PDF', icon: <FileSearch size={20} /> },
   { id: 'crm', name: 'Organização (CRM)', icon: <PhoneCall size={20} /> },
   { id: 'strategy', name: 'Conversão & Estratégia', icon: <Mail size={20} /> },
+  { id: 'admin', name: 'Admin (Master)', icon: <ShieldAlert size={20} /> },
 ];
 
 export const validateCNPJ = (cnpj: string): boolean => {
