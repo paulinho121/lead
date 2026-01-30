@@ -319,15 +319,13 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                 <div className="flex flex-wrap items-center gap-2 text-sm mt-3">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-1">Buscar Dados Faltantes:</span>
                                                     <a
-                                                        href={lead.website ? (lead.website.startsWith('http') ? lead.website : `https://${lead.website}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
+                                                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors border ${lead.website
-                                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
-                                                            : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-[10px] hover:bg-blue-100 transition-colors border border-blue-100"
                                                     >
-                                                        <Globe size={12} />
-                                                        {lead.website ? 'SITE OFICIAL' : 'SITE / GOOGLE'}
+                                                        <Search size={12} />
+                                                        SITE / GOOGLE
                                                     </a>
                                                     <a
                                                         href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' instagram')}`}
