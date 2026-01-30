@@ -226,7 +226,9 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
       {/* Mobile Header (Only visible on small screens) */}
       <header className="md:hidden flex items-center justify-between p-4 bg-[var(--bg-sidebar)] border-b border-[var(--border)] sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[var(--primary)] rounded-lg flex items-center justify-center text-white font-bold text-xs">MCI</div>
+          <div className="w-12 h-10 flex items-center justify-center">
+            <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-125" />
+          </div>
           <h1 className="font-bold text-lg tracking-tight">LeadPro <span className="text-[var(--primary)]">B2B</span></h1>
         </div>
         <button
@@ -256,7 +258,9 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
 
         <div className="p-6 border-b border-[var(--border)] hidden md:block">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-10 h-8 bg-[var(--primary)] rounded-lg flex items-center justify-center text-white font-bold text-sm px-1 shadow-lg shadow-[var(--primary)]/20">MCI</div>
+            <div className="w-14 h-10 flex items-center justify-center">
+              <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
+            </div>
             <h1 className="font-bold text-xl tracking-tight text-[var(--text-main)]">LeadPro <span className="text-[var(--primary)]">B2B</span></h1>
           </div>
           <div className="flex items-center justify-between mt-1">

@@ -54,8 +54,8 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onBackToLogin }) => {
             <div className="w-full max-w-[480px] px-6 py-12 relative z-10">
                 {/* Logo & Header */}
                 <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="w-16 h-16 bg-white dark:bg-[#1a1d23] rounded-[20px] shadow-xl shadow-[var(--primary)]/10 flex items-center justify-center p-3 mb-4 border border-[var(--border)]">
-                        <div className="text-[var(--primary)] font-black text-xl tracking-tighter">MCI</div>
+                    <div className="w-20 h-20 bg-white dark:bg-[#1a1d23] rounded-[24px] shadow-xl shadow-[var(--primary)]/10 flex items-center justify-center p-2 mb-4 border border-[var(--border)] overflow-hidden">
+                        <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
                     </div>
                     <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Criação de Conta</h2>
                     <p className="text-[var(--text-muted)] text-sm mt-1 font-medium">Junte-se à equipe de vendas MCI LeadPro.</p>

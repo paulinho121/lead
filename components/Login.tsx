@@ -40,9 +40,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRegister }) => {
             <div className="w-full max-w-[440px] px-6 py-12 relative z-10">
                 {/* Logo Area */}
                 <div className="flex flex-col items-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="w-20 h-20 bg-white dark:bg-[#1a1d23] rounded-[24px] shadow-2xl shadow-[var(--primary)]/20 flex items-center justify-center p-4 mb-6 border border-[var(--border)] overflow-hidden">
-                        {/* Placeholder for MCI Logo - User can swap this <img> easily */}
-                        <div className="text-[var(--primary)] font-black text-2xl tracking-tighter">MCI</div>
+                    <div className="w-24 h-24 bg-white dark:bg-[#1a1d23] rounded-[28px] shadow-2xl shadow-[var(--primary)]/10 flex items-center justify-center p-2 mb-6 border border-[var(--border)] overflow-hidden">
+                        <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
                     </div>
                     <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">LeadPro <span className="text-[var(--primary)]">B2B</span></h2>
                     <p className="text-[var(--text-muted)] text-sm mt-2 font-medium">Acesse sua central de inteligência e vendas.</p>
