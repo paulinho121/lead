@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #00A38E;
+  /* Teal from MC Logo */
+  --primary-hover: #008f7d;
+  --secondary: #64748b;
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #00A38E;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+[data-theme='dark'] {
+  --bg-main: #0f1115;
+  /* Dark graphite from logo BG */
+  --bg-card: #1a1d23;
+  --bg-sidebar: #15181e;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #2d323a;
+  --primary: #00c4ab;
+  /* Brighter teal for dark mode */
+  --primary-hover: #33d1bd;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base UI Fixes using variables */
+.bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.bg-slate-50 {
+  background-color: var(--bg-main) !important;
+}
+
+.bg-slate-900 {
+  background-color: #0f1115 !important;
+}
+
+.border-slate-200,
+.border-slate-100 {
+  border-color: var(--border) !important;
+}
+
+.text-slate-800,
+.text-slate-700 {
+  color: var(--text-main) !important;
+}
+
+.text-slate-500,
+.text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow) !important;
+}
+
+/* Teal Theme Classes */
+.bg-blue-600 {
+  background-color: var(--primary) !important;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.text-blue-600 {
+  color: var(--primary) !important;
+}
+
+.bg-blue-50 {
+  background-color: color-mix(in srgb, var(--primary), transparent 90%) !important;
+}
+
+.border-blue-200,
+.border-blue-100 {
+  border-color: color-mix(in srgb, var(--primary), transparent 80%) !important;
+}
+
+.text-blue-700 {
+  color: color-mix(in srgb, var(--primary), black 20%) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

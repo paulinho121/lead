@@ -1,0 +1,7 @@
+{
+  "name": "B2B Lead Enrichment Pro",
+  "description": "An enterprise-grade tool for extracting CNPJs from PDFs, enriching them via public Brazilian APIs, and preparing B2B marketing data with Gemini-powered parsing.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
