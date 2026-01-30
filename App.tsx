@@ -274,9 +274,9 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {NAVIGATION.filter(item => {
             const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com';
-            // Salespeople only see Dashboard and CRM
+            // Vendedores veem Dashboard, CRM e Estratégia
             if (!isAdmin) {
-              return item.id === 'dashboard' || item.id === 'crm';
+              return item.id === 'dashboard' || item.id === 'crm' || item.id === 'strategy';
             }
             // Admin sees everything
             return true;
