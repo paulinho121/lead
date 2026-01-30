@@ -131,17 +131,17 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
                       <div className="flex flex-col gap-1">
                         <span className={`
                           inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
-                          ${lead.status === 'enriched' ? 'bg-emerald-100 text-emerald-700' : lead.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}
+                          ${lead.status === 'enriched' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : lead.status === 'failed' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'}
                         `}>
                           {lead.status === 'enriched' ? 'Enriquecido' : lead.status === 'failed' ? 'Falhou' : 'Pendente'}
                         </span>
                         {lead.contacted && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
                             Contactado
                           </span>
                         )}
                         {lead.situacaoCadastral?.includes('BAIXADA') && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-100 text-red-700">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400">
                             Baixada
                           </span>
                         )}

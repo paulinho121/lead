@@ -191,7 +191,10 @@ const App: React.FC = () => {
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-[var(--text-main)] hover:bg-[var(--bg-main)] rounded-xl transition-colors"
+          className={`p-2 rounded-xl transition-all ${isMobileMenuOpen
+            ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
+            : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+            }`}
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -230,9 +233,12 @@ const App: React.FC = () => {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {NAVIGATION.filter(item => {
-            if (item.id === 'admin') {
-              return user?.email === 'paulofernandoautomacao@gmail.com';
+            const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com';
+            // Salespeople only see Dashboard and CRM
+            if (!isAdmin) {
+              return item.id === 'dashboard' || item.id === 'crm';
             }
+            // Admin sees everything
             return true;
           }).map(item => (
             <button
@@ -241,36 +247,74 @@ const App: React.FC = () => {
                 setActiveTab(item.id as AppTab);
                 setIsMobileMenuOpen(false); // Close on click for mobile
               }}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id
-                ? 'bg-[var(--primary)]/10 text-[var(--primary)] font-bold shadow-sm shadow-[var(--primary)]/5'
-                : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)]'
+              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === item.id
+                ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20'
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
                 }`}
             >
-              <span className={activeTab === item.id ? 'text-[var(--primary)] scale-110' : 'opacity-60'}>{item.icon}</span>
-              <span className="text-sm">{item.name}</span>
+              <span className={activeTab === item.id ? 'text-white scale-110' : 'text-[var(--text-muted)]'}>{item.icon}</span>
+              <span className={`text-sm ${activeTab === item.id ? 'text-white' : 'font-medium'}`}>{item.name}</span>
             </button>
           ))}
         </nav>
-
-        <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-main)]/30 backdrop-blur-sm">
+        <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
-            <div className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest px-2">Status da Operação</div>
-            <div className="px-2 text-xs font-bold text-[var(--text-main)] mb-2">{leads.length} Leads na Base</div>
+            <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest px-2">Ações do Sistema</div>
 
-            <button
-              onClick={() => { handleRequestLeads(); setIsMobileMenuOpen(false); }}
-              disabled={isLoading || user?.email === 'paulofernandoautomacao@gmail.com'}
-              className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-white py-3 px-4 rounded-xl text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
-            >
-              {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
-              SOLICITAR +20 LEADS
-            </button>
+            {/* Admin Specific Actions */}
+            {user?.email === 'paulofernandoautomacao@gmail.com' && (
+              <>
+                <button
+                  onClick={() => exportLeadsToCSV(leads)}
+                  disabled={leads.length === 0}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-[var(--text-main)] py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors disabled:opacity-50"
+                >
+                  <Download size={14} /> EXPORTAR CSV
+                </button>
+                <button
+                  onClick={processQueue}
+                  disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  ENRIQUECER FILA MASTER
+                </button>
+              </>
+            )}
+
+            {/* Salesperson Specific Actions */}
+            {user?.email !== 'paulofernandoautomacao@gmail.com' && (
+              <>
+                <button
+                  onClick={() => { handleRequestLeads(); setIsMobileMenuOpen(false); }}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-white py-3 px-4 rounded-xl text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
+                >
+                  {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
+                  SOLICITAR +20 LEADS
+                </button>
+                <button
+                  onClick={processQueue}
+                  disabled={isEnriching || leads.filter(l => (l.status === 'pending' || (l.status === 'enriched' && !l.email))).length === 0}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                >
+                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  ENRIQUECER MEUS LEADS
+                </button>
+              </>
+            )}
+
+            {statusMessage && (
+              <div className="text-[10px] font-bold text-center text-emerald-600 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100 animate-pulse">
+                {statusMessage}
+              </div>
+            )}
 
             <button
               onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-              className="w-full mt-2 text-[10px] font-black text-[var(--text-muted)] hover:text-red-500 uppercase tracking-widest transition-colors py-2"
+              className="w-full mt-2 text-[10px] font-black text-[var(--text-main)] opacity-60 hover:opacity-100 hover:text-red-500 uppercase tracking-widest transition-all py-2"
             >
-              Encerrar Sessão
+              Sair da Conta (Logout)
             </button>
           </div>
         </div>

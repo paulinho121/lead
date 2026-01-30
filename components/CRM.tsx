@@ -8,6 +8,17 @@ interface CRMProps {
     onUpdateLead: (lead: Lead) => Promise<void>;
 }
 
+const RESPONSE_OPTIONS = [
+    'Interessado - Agendar Reunião',
+    'Interessado - Enviar Proposta',
+    'Em Negociação',
+    'Não tem interesse / Recusou',
+    'Sem Orçamento no momento',
+    'Não atende / Telefone Errado',
+    'Deixei Recado / Retornar depois',
+    'Outros (Digitar manualmente)'
+];
+
 const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedState, setSelectedState] = useState<string>('all');
@@ -164,7 +175,9 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                 </div>
                                             </div>
                                             <div className="flex sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${lead.contacted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${lead.contacted
+                                                    ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                                                     }`}>
                                                     {lead.contacted ? 'Contactado' : 'Pendente'}
                                                 </span>
@@ -186,10 +199,17 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                                 {lead.email || <span className="text-slate-300 italic">Sem email</span>}
                                             </div>
                                             {lead.instagram && (
-                                                <div className="flex items-center gap-2 text-sm text-[var(--primary)]">
-                                                    <span className="font-bold">IG:</span>
-                                                    <a href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-colors">
-                                                        {lead.instagram}
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Instagram size={16} className="text-pink-600" />
+                                                    <a
+                                                        href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-bold text-slate-700 hover:text-pink-600 transition-colors"
+                                                    >
+                                                        {lead.instagram.includes('instagram.com/')
+                                                            ? '@' + lead.instagram.split('instagram.com/')[1].replace('/', '')
+                                                            : lead.instagram.startsWith('@') ? lead.instagram : '@' + lead.instagram}
                                                     </a>
                                                 </div>
                                             )}
@@ -232,13 +252,33 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                                             <div className="space-y-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                                                 <div>
                                                     <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Resposta do Cliente</label>
-                                                    <input
-                                                        className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                                        placeholder="Interessado? Recusou? Agendou?"
-                                                        value={editValues.contactResponse}
-                                                        onChange={(e) => setEditValues({ ...editValues, contactResponse: e.target.value })}
-                                                        autoFocus
-                                                    />
+                                                    <select
+                                                        className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 mb-2"
+                                                        value={RESPONSE_OPTIONS.includes(editValues.contactResponse) ? editValues.contactResponse : (editValues.contactResponse ? 'Outros (Digitar manualmente)' : '')}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (val === 'Outros (Digitar manualmente)') {
+                                                                setEditValues({ ...editValues, contactResponse: '' });
+                                                            } else {
+                                                                setEditValues({ ...editValues, contactResponse: val });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Selecione uma resposta...</option>
+                                                        {RESPONSE_OPTIONS.map(opt => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+
+                                                    {(!RESPONSE_OPTIONS.includes(editValues.contactResponse) || editValues.contactResponse === '') && (
+                                                        <input
+                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 animate-in slide-in-from-top-1"
+                                                            placeholder="Digite a resposta personalizada..."
+                                                            value={editValues.contactResponse}
+                                                            onChange={(e) => setEditValues({ ...editValues, contactResponse: e.target.value })}
+                                                            autoFocus
+                                                        />
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Observações</label>
