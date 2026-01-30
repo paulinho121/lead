@@ -7,10 +7,11 @@ import { exportLeadsToCSV } from '../services/exportService';
 
 interface DashboardProps {
   leads: Lead[];
+  totalLeadCount?: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
-  const total = leads.length;
+const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount }) => {
+  const total = totalLeadCount || leads.length;
   const enriched = leads.filter(l => l.status === 'enriched').length;
   const pending = leads.filter(l => l.status === 'pending' || l.status === 'processing').length;
   const failed = leads.filter(l => l.status === 'failed').length;

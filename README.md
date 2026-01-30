@@ -1,20 +1,43 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# B2B Lead Engine - Versão Offlabel
 
-# Run and deploy your AI Studio app
+Sistema inteligente de captação e enriquecimento de leads B2B baseado em inteligência artificial.
 
-This contains everything you need to run your app locally.
+## 🚀 Funcionalidades
 
-View your app in AI Studio: https://ai.studio/apps/drive/1ikOBCcZFakr3fCMC3mqpFGlcZ4INCHBP
+- **Captação Híbrida:** Extração de dados de PDFs (listas, notas fiscais) ou busca proativa na web por palavras-chave.
+- **Enriquecimento Inteligente:** Integração com BrasilAPI e IA Gemini 2.0 Flash para estruturar dados e descobrir e-mails corporativos.
+- **CRM Integrado:** Fluxo de gestão de contatos com respostas padronizadas e histórico.
+- **Dashboard Admin:** Visão macro da operação, logs de performance e exportação de dados.
+- **Multi-Tema:** Suporte completo a modo claro/escuro.
 
-## Run Locally
+## 🛠️ Instalação e Configuração
 
-**Prerequisites:**  Node.js
+### 1. Requisitos
+- Node.js (v18+)
+- Conta no Supabase
+- Chave de API do Google AI Studio (Gemini)
 
+### 2. Configurar Variáveis de Ambiente
+Copie o arquivo `.env.example` para `.env` e preencha as chaves:
+```bash
+cp .env.example .env
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 3. Banco de Dados (Supabase)
+Importe as tabelas necessárias:
+- `leads`: (id, c_id, cnpj, razao_social, email, telefone, status, contacted, userId, etc.)
+- `profiles`: (id, email, full_name, created_at)
+
+### 4. Rodar o Projeto
+```bash
+npm install
+npm run dev
+```
+
+## 🛡️ Segurança e Customização
+Esta é uma versão "White Label". Você pode alterar as cores em `constants.tsx` e customizar a logo no sidebar em `App.tsx`.
+
+A proteção de rotas admin é baseada no email configurado em `VITE_ADMIN_EMAIL` no seu arquivo `.env`.
+
+---
+Feito com ❤️ para escalar operações de vendas.

@@ -52,49 +52,75 @@ const Enricher: React.FC<EnricherProps> = ({ onProcessed, leads, onUpdateLead })
         setProgress(Math.round((i / pdf.numPages) * 30));
       }
 
-      setStatusMessage('Analisando documento com IA...');
-      addLog('info', 'Extraindo dados estruturados (CNPJ + Emails)...');
+      setStatusMessage('Extraindo dados do PDF...');
+      addLog('info', 'Extraindo CNPJs e detalhes iniciais...');
 
-      const parsedData = await parseUnstructuredText(fullText);
-
-      if (parsedData.length > 0) {
-        const extractedLeads: Lead[] = parsedData.map((item: any) => ({
-          id: crypto.randomUUID(),
-          cnpj: item.cnpj.replace(/[^\d]/g, ''),
-          razaoSocial: item.razaoSocial || 'Extraído do PDF',
-          email: item.email ? normalizeEmail(item.email) : undefined,
-          telefone: item.telefone ? normalizePhone(item.telefone) : undefined,
-          status: 'pending' as const,
-          source: file.name,
-          capturedAt: new Date().toISOString()
-        }));
-
-        onProcessed(extractedLeads);
-        addLog('success', `${extractedLeads.length} leads identificados.`);
-        processLeads(extractedLeads);
-        return;
-      }
-
+      // 1. Extração via Regex (Full Text) - Garantia de não perder nada
       const cnpjRegex = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14}/g;
-      const foundCnpjs = Array.from(new Set(fullText.match(cnpjRegex) || []));
+      const allFoundCnpjs = Array.from(new Set(fullText.match(cnpjRegex) || []))
+        .map(c => c.replace(/[^\d]/g, ''))
+        .filter(c => validateCNPJ(c));
 
-      if (foundCnpjs.length === 0) {
-        throw new Error('Nenhum dado válido encontrado.');
+      addLog('info', `${allFoundCnpjs.length} CNPJs detectados no documento.`);
+
+      // 2. Extração via IA (First chunk) - Para pegar nomes e emails que o regex não pegaria
+      const parsedData = await parseUnstructuredText(fullText);
+      const aiCnpjs = new Set(parsedData.map((item: any) => item.cnpj.replace(/[^\d]/g, '')));
+
+      // 3. Mesclar resultados
+      const extractedLeads: Lead[] = [];
+
+      // Adiciona os que a IA encontrou primeiro (mais detalhados)
+      parsedData.forEach((item: any) => {
+        const cleanCnpj = item.cnpj.replace(/[^\d]/g, '');
+        if (validateCNPJ(cleanCnpj)) {
+          extractedLeads.push({
+            id: crypto.randomUUID(),
+            cnpj: cleanCnpj,
+            razaoSocial: item.razaoSocial || 'Extraído do PDF',
+            email: item.email ? normalizeEmail(item.email) : undefined,
+            telefone: item.telefone ? normalizePhone(item.telefone) : undefined,
+            status: 'pending' as const,
+            source: file.name,
+            capturedAt: new Date().toISOString()
+          });
+        }
+      });
+
+      // Adiciona os demais CNPJs encontrados via Regex que a IA não processou
+      allFoundCnpjs.forEach(cnpj => {
+        if (!aiCnpjs.has(cnpj)) {
+          extractedLeads.push({
+            id: crypto.randomUUID(),
+            cnpj: cnpj,
+            razaoSocial: 'Aguardando enriquecimento...',
+            status: 'pending' as const,
+            source: file.name,
+            capturedAt: new Date().toISOString(),
+          });
+        }
+      });
+
+      if (extractedLeads.length === 0) {
+        throw new Error('Nenhum CNPJ válido encontrado no PDF.');
       }
 
-      const backupLeads: Lead[] = foundCnpjs
-        .filter(cnpj => validateCNPJ(cnpj))
-        .map(cnpj => ({
-          id: crypto.randomUUID(),
-          cnpj: cnpj.replace(/[^\d]/g, ''),
-          razaoSocial: 'Aguardando enriquecimento...',
-          status: 'pending',
-          source: file.name,
-          capturedAt: new Date().toISOString(),
-        }));
+      // 4. Salvar no Banco (em lotes para evitar problemas com 14k+)
+      addLog('info', `Salvando ${extractedLeads.length} leads na base de dados...`);
 
-      onProcessed(backupLeads);
-      processLeads(backupLeads);
+      const batchSize = 500;
+      for (let i = 0; i < extractedLeads.length; i += batchSize) {
+        const batch = extractedLeads.slice(i, i + batchSize);
+        await onProcessed(batch);
+        setProgress(30 + Math.round(((i + batch.length) / extractedLeads.length) * 20));
+        setStatusMessage(`Salvando: ${i + batch.length}/${extractedLeads.length}`);
+      }
+
+      addLog('success', `${extractedLeads.length} leads salvos com sucesso!`);
+
+      // 5. Iniciar enriquecimento automático do lote
+      processLeads(extractedLeads);
+      return;
 
     } catch (error: any) {
       addLog('error', `Falha: ${error.message}`);

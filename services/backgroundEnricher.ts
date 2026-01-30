@@ -12,19 +12,23 @@ export const backgroundEnricher = {
     ) {
         onLog('info', `Iniciando processamento em lote de ${leadsToProcess.length} leads...`);
 
+        let count = 0;
+        const total = leadsToProcess.length;
+
         for (const lead of leadsToProcess) {
-            if (lead.status === 'enriched') continue;
+            count++;
+            if (lead.status === 'enriched' && lead.email) continue;
 
             try {
-                onLog('info', `Consultando ${lead.cnpj}...`);
+                onLog('info', `[${count}/${total}] Processando ${lead.cnpj}...`);
                 const data = await fetchCNPJData(lead.cnpj);
 
                 if (data) {
                     let email = data.email;
 
-                    // IF API has NO email, try Gemini discovery as last resort
+                    // IF API has NO email, try Gemini discovery
                     if (!email) {
-                        onLog('info', `API sem email para ${data.razao_social}. Tentando IA...`);
+                        onLog('info', `IA buscando email para ${data.razao_social}...`);
                         email = await discoverEmail(data.razao_social, lead.cnpj);
                     }
 
@@ -41,20 +45,29 @@ export const backgroundEnricher = {
                         status: 'enriched'
                     };
                     onUpdate(enrichedLead);
-                    onLog('success', `Sucesso (${email ? 'Com Email' : 'Sem Email'}): ${data.razao_social}`);
+                    onLog('success', `Sucesso em ${count}/${total}: ${data.razao_social}`);
                 } else {
-                    // Keep as pending or mark as failed
-                    onUpdate({ ...lead, status: 'failed', error: 'Dados não encontrados ou limite atingido' });
-                    onLog('error', `Não encontrado ou limite atingido para: ${lead.cnpj}`);
+                    onUpdate({ ...lead, status: 'failed', error: 'Não encontrado' });
+                    onLog('error', `Não encontrado (${count}/${total}): ${lead.cnpj}`);
                 }
-            } catch (err) {
-                onUpdate({ ...lead, status: 'failed', error: 'Erro técnico na consulta' });
-                onLog('error', `Erro técnico na consulta de ${lead.cnpj}`);
+            } catch (err: any) {
+                const isRateLimit = err.message?.includes('429') || err.message?.includes('limite');
+                onUpdate({ ...lead, status: 'failed', error: isRateLimit ? 'Limite atingido' : 'Erro técnico' });
+                onLog('error', `Erro em ${lead.cnpj}: ${err.message || 'Erro desconhecido'}`);
+
+                if (isRateLimit) {
+                    onLog('info', 'Limite de taxa atingido. Aguardando 60s...');
+                    await new Promise(r => setTimeout(r, 60000));
+                }
             }
 
-            // DELAY: 3 seconds to be safer with fallback APIs
-            for (let i = 3; i > 0; i--) {
-                onLog('info', `Aguardando ${i}s para evitar bloqueio...`);
+            // DELAY: 3 seconds (reduzido ligeiramente para 2s se sucesso, 3s se erro)
+            const delay = 3000;
+            const steps = 3;
+            for (let i = steps; i > 0; i--) {
+                if (total > 1) { // Só loga contagem se for lote
+                    onLog('info', `Próximo lead em ${i}s...`);
+                }
                 await new Promise(r => setTimeout(r, 1000));
             }
         }

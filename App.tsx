@@ -43,24 +43,41 @@ const App: React.FC = () => {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  const [totalLeadCount, setTotalLeadCount] = useState(0);
+
   useEffect(() => {
     // Check current session
     supabase?.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setUser(session?.user ?? null);
-      if (session) loadLeads();
+      if (session) {
+        loadLeads();
+        loadStats();
+      }
     });
 
     // Listen to changes
     const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
       setUser(session?.user ?? null);
-      if (session) loadLeads();
+      if (session) {
+        loadLeads();
+        loadStats();
+      }
       else setLeads([]);
     }) || { data: { subscription: null } };
 
     return () => subscription?.unsubscribe();
   }, []);
+
+  const loadStats = async () => {
+    try {
+      const stats = await leadService.getStats();
+      setTotalLeadCount(stats.total);
+    } catch (error) {
+      console.error("Erro ao carregar stats:", error);
+    }
+  };
 
   const loadLeads = async () => {
     setIsLoading(true);
@@ -112,6 +129,7 @@ const App: React.FC = () => {
         setStatusMessage('');
       }, 2000);
       loadLeads();
+      loadStats();
     }
   };
 
@@ -121,6 +139,7 @@ const App: React.FC = () => {
       const leadsWithUser = newLeads.map(l => ({ ...l, userId: user.id }));
       await leadService.upsertLeads(leadsWithUser);
       await loadLeads();
+      await loadStats();
     } catch (error) {
       alert("Erro ao salvar novos leads no banco de dados.");
     }
@@ -132,6 +151,7 @@ const App: React.FC = () => {
       const leadWithUser = { ...updatedLead, userId: user.id };
       await leadService.upsertLeads([leadWithUser]);
       setLeads(prev => prev.map(l => l.id === updatedLead.id ? leadWithUser : l));
+      loadStats(); // Silencioso
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
     }
@@ -166,6 +186,7 @@ const App: React.FC = () => {
       try {
         await leadService.clearAllLeads();
         setLeads([]);
+        setTotalLeadCount(0);
       } catch (error) {
         alert("Erro ao limpar base de dados.");
       }
@@ -323,7 +344,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-[var(--bg-main)]">
         <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} />}
+          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} />}
           {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
           {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}

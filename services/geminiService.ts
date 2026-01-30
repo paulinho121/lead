@@ -10,7 +10,7 @@ export const parseUnstructuredText = async (text: string) => {
       contents: `Extraia informações de empresas brasileiras (especialmente CNPJ, Email e Telefone) do seguinte texto extraído de um PDF. 
       Muitas vezes o email e o telefone estão próximos ao CNPJ ou no cabeçalho/rodapé.
       Retorne APENAS o JSON conforme o schema.
-      Texto: ${text.substring(0, 15000)}`,
+      Texto: ${text.substring(0, 50000)}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {

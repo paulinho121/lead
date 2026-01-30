@@ -4,10 +4,12 @@ import { supabase } from './supabase';
 export const leadService = {
     async getAllLeads(): Promise<Lead[]> {
         if (!supabase) return [];
+        // Fetch with a high limit to support bulk operations
         const { data, error } = await supabase
             .from('leads')
             .select('*')
-            .order('captured_at', { ascending: false });
+            .order('captured_at', { ascending: false })
+            .limit(20000);
 
         if (error) {
             console.error('Error fetching leads:', error);
@@ -17,11 +19,36 @@ export const leadService = {
         return (data || []).map(leadService.mapFromDb);
     },
 
+    async getStats(): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number }> {
+        if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 };
+
+        const { count: total, error: e1 } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+        const { count: enriched, error: e2 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched');
+        const { count: pending, error: e3 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']);
+        const { count: failed, error: e4 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed');
+
+        // Count leads that have email OR phone
+        const { count: withEmail, error: e5 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).not('email', 'is', null);
+
+        if (e1 || e2 || e3 || e4 || e5) {
+            console.error('Error fetching stats');
+        }
+
+        return {
+            total: total || 0,
+            enriched: enriched || 0,
+            pending: pending || 0,
+            failed: failed || 0,
+            hasContact: withEmail || 0 // Simplificação: priorizando email para o dashboard
+        };
+    },
+
     async getAdminLeads(): Promise<Lead[]> {
         if (!supabase) return [];
         const { data, error } = await supabase
             .from('leads')
-            .select('*');
+            .select('*')
+            .limit(20000);
 
         if (error) {
             console.error('Error fetching admin leads:', error);
