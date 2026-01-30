@@ -2,14 +2,19 @@ import { Lead } from '../types';
 import { supabase } from './supabase';
 
 export const leadService = {
-    async getAllLeads(): Promise<Lead[]> {
+    async getAllLeads(userId?: string): Promise<Lead[]> {
         if (!supabase) return [];
-        // Fetch with a high limit to support bulk operations
-        const { data, error } = await supabase
+        let query = supabase
             .from('leads')
             .select('*')
             .order('captured_at', { ascending: false })
             .limit(20000);
+
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching leads:', error);
@@ -66,10 +71,40 @@ export const leadService = {
         return data || [];
     },
 
-    async requestNewLeads(vendedorId: string): Promise<void> {
+    async getAvailableStates(): Promise<string[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('leads')
+            .select('uf')
+            .is('user_id', null)
+            .not('uf', 'is', null);
+
+        if (error) return [];
+        const states = Array.from(new Set(data.map(item => item.uf))).sort();
+        return states;
+    },
+
+    async syncProfile(userId: string, email: string, fullname?: string): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('profiles')
+            .upsert({
+                id: userId,
+                email: email,
+                fullname: fullname || email.split('@')[0],
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (error) {
+            console.error('Error syncing profile:', error);
+        }
+    },
+
+    async requestNewLeads(vendedorId: string, uf?: string): Promise<void> {
         if (!supabase) return;
         const { error } = await supabase.rpc('solicitar_novos_leads', {
-            vendedor_id: vendedorId
+            vendedor_id: vendedorId,
+            p_uf: uf || null
         });
         if (error) {
             console.error('Error requesting leads:', error);

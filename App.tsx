@@ -9,7 +9,7 @@ import Enricher from './components/Enricher';
 import Strategy from './components/Strategy';
 import CRM from './components/CRM';
 import { exportLeadsToCSV } from './services/exportService';
-import { Download, RefreshCw, Sparkles, Loader2, Users } from 'lucide-react';
+import { Download, RefreshCw, Sparkles, Loader2, Users, Globe } from 'lucide-react';
 import { leadService } from './services/dbService';
 import { backgroundEnricher } from './services/backgroundEnricher';
 import { Sun, Moon, Menu, X } from 'lucide-react';
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedRequestUF, setSelectedRequestUF] = useState<string>('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
@@ -44,31 +45,43 @@ const App: React.FC = () => {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const [totalLeadCount, setTotalLeadCount] = useState(0);
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
 
   useEffect(() => {
-    // Check current session
     supabase?.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setUser(session?.user ?? null);
       if (session) {
-        loadLeads();
+        leadService.syncProfile(session.user.id, session.user.email!, session.user.user_metadata?.fullname);
+        loadLeads(session.user);
         loadStats();
+        loadAvailableStates();
       }
     });
 
-    // Listen to changes
     const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
       setUser(session?.user ?? null);
       if (session) {
-        loadLeads();
+        leadService.syncProfile(session.user.id, session.user.email!, session.user.user_metadata?.fullname);
+        loadLeads(session.user);
         loadStats();
+        loadAvailableStates();
       }
       else setLeads([]);
     }) || { data: { subscription: null } };
 
     return () => subscription?.unsubscribe();
   }, []);
+
+  const loadAvailableStates = async () => {
+    try {
+      const states = await leadService.getAvailableStates();
+      setAvailableStates(states);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -79,10 +92,12 @@ const App: React.FC = () => {
     }
   };
 
-  const loadLeads = async () => {
+  const loadLeads = async (currentUser?: any) => {
     setIsLoading(true);
     try {
-      const data = await leadService.getAllLeads();
+      const activeUser = currentUser || user;
+      const isAdmin = activeUser?.email === 'paulofernandoautomacao@gmail.com';
+      const data = await leadService.getAllLeads(isAdmin ? undefined : activeUser?.id);
       setLeads(data);
     } catch (error) {
       console.error("Erro ao carregar leads:", error);
@@ -161,21 +176,25 @@ const App: React.FC = () => {
     await supabase?.auth.signOut();
   };
 
-  const handleRequestLeads = async () => {
+  const handleRequestLeads = async (uf?: string) => {
     if (!user) return;
     const remaining = leads.filter(l => !l.contacted).length;
     if (remaining > 0) {
-      alert(`Você ainda tem ${remaining} leads pendentes. Conclua-os antes de pedir mais!`);
+      alert(`⚠️ Bloqueio de Segurança: Você possui ${remaining} leads que ainda não foram contactados. 
+
+Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o contato ou resposta de todos os leads atuais no seu CRM.`);
       return;
     }
 
     setIsLoading(true);
     try {
-      await leadService.requestNewLeads(user.id);
+      await leadService.requestNewLeads(user.id, uf);
       await loadLeads();
-      alert("Sucesso! 20 novos leads foram atribuídos a você.");
+      await loadStats();
+      await loadAvailableStates();
+      alert(`Sucesso! 20 novos leads${uf ? ` de ${uf}` : ''} foram atribuídos a você.`);
     } catch (error) {
-      alert("Não há mais leads disponíveis na fila central no momento.");
+      alert(`Não há mais leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central no momento.`);
     } finally {
       setIsLoading(false);
     }
@@ -305,24 +324,46 @@ const App: React.FC = () => {
 
             {/* Salesperson Specific Actions */}
             {user?.email !== 'paulofernandoautomacao@gmail.com' && (
-              <>
-                <button
-                  onClick={() => { handleRequestLeads(); setIsMobileMenuOpen(false); }}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-white py-3 px-4 rounded-xl text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
-                >
-                  {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
-                  SOLICITAR +20 LEADS
-                </button>
+              <div className="space-y-4 pt-2">
+                <div className="bg-white dark:bg-slate-800/50 p-4 rounded-2xl border border-[var(--border)] shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1">
+                    <Globe size={12} className="text-[var(--primary)]" />
+                    Filtrar por UF
+                  </div>
+
+                  <select
+                    value={selectedRequestUF}
+                    onChange={(e) => setSelectedRequestUF(e.target.value)}
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all"
+                  >
+                    <option value="">Brasil (Tudo)</option>
+                    {availableStates.map(uf => (
+                      <option key={uf} value={uf}>{uf}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-white py-3.5 px-4 rounded-xl text-xs font-black hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
+                  >
+                    {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
+                    SOLICITAR +20 LEADS
+                  </button>
+                </div>
+
                 <button
                   onClick={processQueue}
                   disabled={isEnriching || leads.filter(l => (l.status === 'pending' || (l.status === 'enriched' && !l.email))).length === 0}
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-xs font-black transition-all disabled:opacity-50 ${leads.some(l => l.status === 'pending' || (l.status === 'enriched' && !l.email))
+                    ? 'bg-amber-600 text-white hover:bg-amber-700 animate-pulse ring-4 ring-amber-500/10'
+                    : 'bg-slate-800 text-white hover:bg-black'
+                    }`}
                 >
                   {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   ENRIQUECER MEUS LEADS
                 </button>
-              </>
+              </div>
             )}
 
             {statusMessage && (

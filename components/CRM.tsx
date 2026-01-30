@@ -47,7 +47,7 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
 
             return matchesSearch && matchesState && matchesTab;
         })
-        .sort((a, b) => (a.uf || '').localeCompare(b.uf || ''));
+        .sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime());
 
     const handleStartEdit = (lead: Lead) => {
         setEditingId(lead.id);
@@ -124,246 +124,268 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead }) => {
                 </button>
                 <button
                     onClick={() => setActiveSubTab('pending')}
-                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeSubTab === 'pending'
+                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${activeSubTab === 'pending'
                         ? 'border-[var(--primary)] text-[var(--primary)]'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     Aguardando Enriquecimento ({leads.filter(l => l.status === 'pending' || l.status === 'failed').length})
+                    {leads.filter(l => l.status === 'pending').length > 0 && (
+                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                    )}
                 </button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
                 {filteredLeads.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300">
+                    <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
                         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Search className="text-slate-300" size={32} />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-700">Nenhum lead encontrado</h3>
-                        <p className="text-slate-500">Tente ajustar sua busca ou adicione novos leads na aba "Enriquecer PDF".</p>
+                        <h3 className="text-lg font-bold text-slate-700">Nenhum lead encontrado nesta aba</h3>
+                        <p className="text-slate-500 max-w-sm mx-auto mt-2">
+                            {activeSubTab === 'ready'
+                                ? 'Os leads que você solicitar aparecerão aqui após serem enriquecidos.'
+                                : 'Leads aguardando processamento da IA para buscar dados da empresa.'}
+                        </p>
                     </div>
                 ) : (
-                    filteredLeads.map(lead => (
-                        <div key={lead.id} className={`bg-white rounded-2xl border transition-all duration-200 ${lead.contacted ? 'border-emerald-100 bg-emerald-50/10' : 'border-slate-200 hover:shadow-md'}`}>
-                            <div className="p-5">
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                    {/* Lead Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
-                                            <div className="flex items-start gap-3 w-full">
-                                                <button
-                                                    onClick={() => toggleContacted(lead)}
-                                                    className={`flex-shrink-0 mt-1 transition-colors ${lead.contacted ? 'text-emerald-500' : 'text-slate-300 hover:text-[var(--primary)]'}`}
-                                                >
-                                                    {lead.contacted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                                                </button>
-                                                <div className="min-w-0 flex-1">
-                                                    <h3 className="font-bold text-[var(--text-main)] text-base md:text-lg truncate">{lead.razaoSocial}</h3>
-                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-muted)]">
-                                                        <span className="font-medium">CNPJ: {lead.cnpj}</span>
-                                                        <span className="hidden sm:inline">•</span>
-                                                        <span>{lead.municipio}/{lead.uf}</span>
-                                                        {lead.situacaoCadastral && (
-                                                            <>
-                                                                <span className="hidden sm:inline">•</span>
-                                                                <span className={`font-bold ${lead.situacaoCadastral.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
-                                                                    {lead.situacaoCadastral}
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${lead.contacted
-                                                    ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                                                    }`}>
-                                                    {lead.contacted ? 'Contactado' : 'Pendente'}
-                                                </span>
-                                                {lead.situacaoCadastral?.includes('BAIXADA') && (
-                                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700 animate-pulse">
-                                                        Empresa Baixada
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <Phone size={14} className="text-slate-400" />
-                                                {lead.telefone || <span className="text-slate-300 italic">Sem telefone</span>}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <MessageSquare size={14} className="text-slate-400" />
-                                                {lead.email || <span className="text-slate-300 italic">Sem email</span>}
-                                            </div>
-                                            {lead.instagram && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Instagram size={16} className="text-pink-600" />
-                                                    <a
-                                                        href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="font-bold text-slate-700 hover:text-pink-600 transition-colors"
-                                                    >
-                                                        {lead.instagram.includes('instagram.com/')
-                                                            ? '@' + lead.instagram.split('instagram.com/')[1].replace('/', '')
-                                                            : lead.instagram.startsWith('@') ? lead.instagram : '@' + lead.instagram}
-                                                    </a>
-                                                </div>
-                                            )}
-                                            <div className="flex flex-wrap items-center gap-2 text-sm mt-3">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-1">Buscar Dados Faltantes:</span>
-                                                <a
-                                                    href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-[10px] hover:bg-blue-100 transition-colors border border-blue-100"
-                                                >
-                                                    <ExternalLink size={12} />
-                                                    SITE / GOOGLE
-                                                </a>
-                                                <a
-                                                    href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' instagram')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-lg font-bold text-[10px] hover:bg-pink-100 transition-colors border border-pink-100"
-                                                >
-                                                    <Instagram size={12} />
-                                                    INSTAGRAM
-                                                </a>
-                                                <a
-                                                    href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' facebook')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-[10px] hover:bg-indigo-100 transition-colors border border-indigo-100"
-                                                >
-                                                    <Facebook size={12} />
-                                                    FACEBOOK
-                                                </a>
-                                            </div>
-                                        </div>
+                    <>
+                        {activeSubTab === 'pending' && (
+                            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                                        <Save size={20} />
                                     </div>
-
-                                    {/* CRM Action/Edit Area */}
-                                    <div className="lg:w-1/3 flex flex-col gap-3">
-                                        {editingId === lead.id ? (
-                                            <div className="space-y-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                                <div>
-                                                    <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Resposta do Cliente</label>
-                                                    <select
-                                                        className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 mb-2"
-                                                        value={RESPONSE_OPTIONS.includes(editValues.contactResponse) ? editValues.contactResponse : (editValues.contactResponse ? 'Outros (Digitar manualmente)' : '')}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            if (val === 'Outros (Digitar manualmente)') {
-                                                                setEditValues({ ...editValues, contactResponse: '' });
-                                                            } else {
-                                                                setEditValues({ ...editValues, contactResponse: val });
-                                                            }
-                                                        }}
-                                                    >
-                                                        <option value="">Selecione uma resposta...</option>
-                                                        {RESPONSE_OPTIONS.map(opt => (
-                                                            <option key={opt} value={opt}>{opt}</option>
-                                                        ))}
-                                                    </select>
-
-                                                    {(!RESPONSE_OPTIONS.includes(editValues.contactResponse) || editValues.contactResponse === '') && (
-                                                        <input
-                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 animate-in slide-in-from-top-1"
-                                                            placeholder="Digite a resposta personalizada..."
-                                                            value={editValues.contactResponse}
-                                                            onChange={(e) => setEditValues({ ...editValues, contactResponse: e.target.value })}
-                                                            autoFocus
-                                                        />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Observações</label>
-                                                    <textarea
-                                                        className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-20 resize-none"
-                                                        placeholder="Notas adicionais..."
-                                                        value={editValues.observations}
-                                                        onChange={(e) => setEditValues({ ...editValues, observations: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">E-mail</label>
-                                                        <input
-                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                                            placeholder="email@empresa.com"
-                                                            value={editValues.email}
-                                                            onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Instagram</label>
-                                                        <input
-                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                                            placeholder="@usuario ou link"
-                                                            value={editValues.instagram}
-                                                            onChange={(e) => setEditValues({ ...editValues, instagram: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleSave(lead)}
-                                                        className="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-1"
-                                                    >
-                                                        <Save size={14} /> Salvar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setEditingId(null)}
-                                                        className="flex-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2 rounded-lg hover:bg-slate-50"
-                                                    >
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 group relative">
-                                                    <button
-                                                        onClick={() => handleStartEdit(lead)}
-                                                        className="absolute top-2 right-2 text-slate-400 hover:text-blue-600 transition-colors"
-                                                    >
-                                                        <MoreHorizontal size={18} />
-                                                    </button>
-
-                                                    <div className="mb-2">
-                                                        <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Resposta</span>
-                                                        <p className="text-sm text-slate-700 min-h-[1.5rem]">
-                                                            {lead.contactResponse || <span className="text-slate-300 italic">Nenhuma resposta registrada</span>}
-                                                        </p>
-                                                    </div>
-
-                                                    <div>
-                                                        <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Observações</span>
-                                                        <p className="text-sm text-slate-600 text-xs italic">
-                                                            {lead.observations || <span className="text-slate-300">Sem observações</span>}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {!lead.contacted && (
-                                                    <button
-                                                        onClick={() => handleStartEdit(lead)}
-                                                        className="w-full py-2 bg-white border border-blue-200 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                                                    >
-                                                        <Phone size={14} /> Registrar Contato
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
+                                    <div>
+                                        <p className="text-sm font-bold text-amber-900">Você possui {filteredLeads.length} leads aguardando dados.</p>
+                                        <p className="text-xs text-amber-700">Clique no botão "Enriquecer Meus Leads" no menu lateral para buscar emails e telefones.</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        )}
+                        {filteredLeads.map(lead => (
+                            <div key={lead.id} className={`bg-white rounded-2xl border transition-all duration-200 ${lead.contacted ? 'border-emerald-100 bg-emerald-50/10' : 'border-slate-200 hover:shadow-md'}`}>
+                                <div className="p-5">
+                                    <div className="flex flex-col lg:flex-row gap-6">
+                                        {/* Lead Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
+                                                <div className="flex items-start gap-3 w-full">
+                                                    <button
+                                                        onClick={() => toggleContacted(lead)}
+                                                        className={`flex-shrink-0 mt-1 transition-colors ${lead.contacted ? 'text-emerald-500' : 'text-slate-300 hover:text-[var(--primary)]'}`}
+                                                    >
+                                                        {lead.contacted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                                                    </button>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="font-bold text-[var(--text-main)] text-base md:text-lg truncate">{lead.razaoSocial}</h3>
+                                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-muted)]">
+                                                            <span className="font-medium">CNPJ: {lead.cnpj}</span>
+                                                            <span className="hidden sm:inline">•</span>
+                                                            <span>{lead.municipio}/{lead.uf}</span>
+                                                            {lead.situacaoCadastral && (
+                                                                <>
+                                                                    <span className="hidden sm:inline">•</span>
+                                                                    <span className={`font-bold ${lead.situacaoCadastral.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                                        {lead.situacaoCadastral}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${lead.contacted
+                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                        : 'bg-indigo-100 text-indigo-700'
+                                                        }`}>
+                                                        {lead.contacted ? 'Finalizado' : 'A Contatar'}
+                                                    </span>
+                                                    {lead.situacaoCadastral?.includes('BAIXADA') && (
+                                                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700 animate-pulse">
+                                                            Empresa Baixada
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Phone size={14} className="text-slate-400" />
+                                                    {lead.telefone || <span className="text-slate-300 italic">Sem telefone</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <MessageSquare size={14} className="text-slate-400" />
+                                                    {lead.email || <span className="text-slate-300 italic">Sem email</span>}
+                                                </div>
+                                                {lead.instagram && (
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <Instagram size={16} className="text-pink-600" />
+                                                        <a
+                                                            href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="font-bold text-slate-700 hover:text-pink-600 transition-colors"
+                                                        >
+                                                            {lead.instagram.includes('instagram.com/')
+                                                                ? '@' + lead.instagram.split('instagram.com/')[1].replace('/', '')
+                                                                : lead.instagram.startsWith('@') ? lead.instagram : '@' + lead.instagram}
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-wrap items-center gap-2 text-sm mt-3">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-1">Buscar Dados Faltantes:</span>
+                                                    <a
+                                                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' site oficial')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold text-[10px] hover:bg-blue-100 transition-colors border border-blue-100"
+                                                    >
+                                                        <ExternalLink size={12} />
+                                                        SITE / GOOGLE
+                                                    </a>
+                                                    <a
+                                                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' instagram')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-lg font-bold text-[10px] hover:bg-pink-100 transition-colors border border-pink-100"
+                                                    >
+                                                        <Instagram size={12} />
+                                                        INSTAGRAM
+                                                    </a>
+                                                    <a
+                                                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' ' + (lead.municipio || '') + ' facebook')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-[10px] hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                                    >
+                                                        <Facebook size={12} />
+                                                        FACEBOOK
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* CRM Action/Edit Area */}
+                                        <div className="lg:w-1/3 flex flex-col gap-3">
+                                            {editingId === lead.id ? (
+                                                <div className="space-y-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Resposta do Cliente</label>
+                                                        <select
+                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 mb-2"
+                                                            value={RESPONSE_OPTIONS.includes(editValues.contactResponse) ? editValues.contactResponse : (editValues.contactResponse ? 'Outros (Digitar manualmente)' : '')}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                if (val === 'Outros (Digitar manualmente)') {
+                                                                    setEditValues({ ...editValues, contactResponse: '' });
+                                                                } else {
+                                                                    setEditValues({ ...editValues, contactResponse: val });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">Selecione uma resposta...</option>
+                                                            {RESPONSE_OPTIONS.map(opt => (
+                                                                <option key={opt} value={opt}>{opt}</option>
+                                                            ))}
+                                                        </select>
+
+                                                        {(!RESPONSE_OPTIONS.includes(editValues.contactResponse) || editValues.contactResponse === '') && (
+                                                            <input
+                                                                className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 animate-in slide-in-from-top-1"
+                                                                placeholder="Digite a resposta personalizada..."
+                                                                value={editValues.contactResponse}
+                                                                onChange={(e) => setEditValues({ ...editValues, contactResponse: e.target.value })}
+                                                                autoFocus
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Observações</label>
+                                                        <textarea
+                                                            className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-20 resize-none"
+                                                            placeholder="Notas adicionais..."
+                                                            value={editValues.observations}
+                                                            onChange={(e) => setEditValues({ ...editValues, observations: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">E-mail</label>
+                                                            <input
+                                                                className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                placeholder="email@empresa.com"
+                                                                value={editValues.email}
+                                                                onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase text-blue-600 mb-1 block">Instagram</label>
+                                                            <input
+                                                                className="w-full p-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                placeholder="@usuario ou link"
+                                                                value={editValues.instagram}
+                                                                onChange={(e) => setEditValues({ ...editValues, instagram: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleSave(lead)}
+                                                            className="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-1"
+                                                        >
+                                                            <Save size={14} /> Salvar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingId(null)}
+                                                            className="flex-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2 rounded-lg hover:bg-slate-50"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 group relative">
+                                                        <button
+                                                            onClick={() => handleStartEdit(lead)}
+                                                            className="absolute top-2 right-2 text-slate-400 hover:text-blue-600 transition-colors"
+                                                        >
+                                                            <MoreHorizontal size={18} />
+                                                        </button>
+
+                                                        <div className="mb-2">
+                                                            <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Resposta</span>
+                                                            <p className="text-sm text-slate-700 min-h-[1.5rem]">
+                                                                {lead.contactResponse || <span className="text-slate-300 italic">Nenhuma resposta registrada</span>}
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Observações</span>
+                                                            <p className="text-sm text-slate-600 text-xs italic">
+                                                                {lead.observations || <span className="text-slate-300">Sem observações</span>}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {!lead.contacted && (
+                                                        <button
+                                                            onClick={() => handleStartEdit(lead)}
+                                                            className="w-full py-2 bg-white border border-blue-200 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                                                        >
+                                                            <Phone size={14} /> Registrar Contato
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </>
                 )}
             </div>
         </div>
