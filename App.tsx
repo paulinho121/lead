@@ -267,7 +267,7 @@ const App: React.FC = () => {
                 <button
                   onClick={() => exportLeadsToCSV(leads)}
                   disabled={leads.length === 0}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-[var(--text-main)] py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                 >
                   <Download size={14} /> EXPORTAR CSV
                 </button>
@@ -305,7 +305,7 @@ const App: React.FC = () => {
             )}
 
             {statusMessage && (
-              <div className="text-[10px] font-bold text-center text-emerald-600 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100 animate-pulse">
+              <div className="text-[10px] font-bold text-center text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-pulse">
                 {statusMessage}
               </div>
             )}
