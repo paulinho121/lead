@@ -36,18 +36,18 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="flex justify-between items-start">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800">Visão Geral</h2>
-          <p className="text-slate-500 mt-1">Estatísticas de enriquecimento e saúde da base de dados.</p>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
+          <p className="text-slate-500 text-sm mt-1">Saúde e progresso da sua base de dados.</p>
         </div>
         <button
           onClick={() => exportLeadsToCSV(leads)}
           disabled={leads.length === 0}
-          className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-colors disabled:opacity-50 text-sm font-semibold shadow-sm"
+          className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-black shadow-sm"
         >
-          <Download size={18} />
-          Exportar Base
+          <Download size={16} />
+          EXPORTAR BASE
         </button>
       </header>
 
@@ -116,12 +116,12 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount }) => {
 };
 
 const StatCard = ({ title, value, icon }: { title: string, value: string | number, icon: React.ReactNode }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-start justify-between">
+  <div className="bg-white p-5 md:p-6 rounded-[24px] md:rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
     <div>
-      <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-      <h4 className="text-2xl font-bold text-slate-800">{value}</h4>
+      <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+      <h4 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">{value}</h4>
     </div>
-    <div className="p-3 bg-slate-50 rounded-xl">
+    <div className="p-3 md:p-4 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform">
       {icon}
     </div>
   </div>

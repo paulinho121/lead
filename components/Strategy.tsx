@@ -62,6 +62,7 @@ const Strategy: React.FC<StrategyProps> = ({ leads }) => {
   const [customBody, setCustomBody] = useState(selectedTemplate.body);
   const [customSubject, setCustomSubject] = useState(selectedTemplate.subject);
   const [previewLeadIndex, setPreviewLeadIndex] = useState(0);
+  const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
   const readyLeads = useMemo(() =>
     leads.filter(l => l.status === 'enriched' && l.email),
@@ -97,17 +98,34 @@ const Strategy: React.FC<StrategyProps> = ({ leads }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800">Estratégia de Conversão</h2>
-          <p className="text-slate-500 mt-1">Transforme leads enriquecidos em oportunidades de negócio.</p>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Estratégia B2B</h2>
+          <p className="text-slate-500 text-sm mt-1">Transforme leads em oportunidades reais.</p>
         </div>
-        <div className="flex gap-4">
-          <div className="bg-blue-600 text-white px-6 py-3 rounded-2xl flex flex-col items-center">
-            <span className="text-2xl font-black">{readyLeads.length}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Prontos para Envio</span>
+
+        {readyLeads.length > 0 && (
+          <div className="flex items-center gap-3">
+            <div className="md:hidden flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+              <button
+                onClick={() => setMobileView('editor')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${mobileView === 'editor' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+              >
+                <Sparkles size={14} /> EDITOR
+              </button>
+              <button
+                onClick={() => setMobileView('preview')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${mobileView === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+              >
+                <Eye size={14} /> PREVIEW
+              </button>
+            </div>
+            <div className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl flex flex-col items-center shadow-lg shadow-blue-500/20">
+              <span className="text-xl font-black leading-none">{readyLeads.length}</span>
+              <span className="text-[8px] font-black uppercase tracking-wider opacity-80 mt-1">Leads</span>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {readyLeads.length === 0 ? (
@@ -123,7 +141,7 @@ const Strategy: React.FC<StrategyProps> = ({ leads }) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Template Selector & Editor */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className={`lg:col-span-7 space-y-6 ${mobileView === 'preview' ? 'hidden md:block' : 'block'}`}>
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <Sparkles className="text-blue-600" size={20} />
@@ -135,8 +153,8 @@ const Strategy: React.FC<StrategyProps> = ({ leads }) => {
                     key={template.id}
                     onClick={() => handleTemplateChange(template)}
                     className={`p-4 rounded-2xl border text-left transition-all ${selectedTemplate.id === template.id
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/10'
-                        : 'border-slate-100 hover:border-slate-200'
+                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/10'
+                      : 'border-slate-100 hover:border-slate-200'
                       }`}
                   >
                     <div className="font-bold text-slate-800">{template.name}</div>
@@ -203,7 +221,7 @@ const Strategy: React.FC<StrategyProps> = ({ leads }) => {
           </div>
 
           {/* Preview & Send Area */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className={`lg:col-span-5 space-y-6 ${mobileView === 'editor' ? 'hidden md:block' : 'block'}`}>
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden sticky top-8">
               <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">

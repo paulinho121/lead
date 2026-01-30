@@ -1,7 +1,7 @@
-
+// CRM Component - Improved Side Drawer for Lead Management
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save } from 'lucide-react';
+import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save, SlidersHorizontal } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
 
 interface CRMProps {
@@ -31,6 +31,7 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
     });
     const [newNiche, setNewNiche] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
     const [editValues, setEditValues] = useState<{
         contactResponse: string;
         observations: string;
@@ -115,63 +116,73 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="flex-shrink-0">
-                    <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Organização de Leads (CRM)</h2>
-                    <p className="text-[var(--text-muted)] text-sm">Gerencie contatos, respostas e observações dos seus leads.</p>
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h2 className="text-xl md:text-2xl font-black text-[var(--text-main)] tracking-tight">CRM de Leads</h2>
+                        <p className="text-[var(--text-muted)] text-xs md:text-sm">Gerencie seus contatos e conversões.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`md:hidden p-3 rounded-2xl border transition-all ${showFilters ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg' : 'bg-white border-[var(--border)] text-[var(--text-main)]'}`}
+                    >
+                        <SlidersHorizontal size={20} />
+                    </button>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Adicionar Nicho (Filtro)..."
-                            className="w-full sm:w-40 px-4 py-2 bg-white border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm font-medium text-[var(--text-main)]"
-                            value={newNiche}
-                            onChange={(e) => setNewNiche(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addNiche()}
-                        />
-                        <button
-                            onClick={addNiche}
-                            className="bg-[var(--primary)] text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-[var(--primary-hover)] transition-all border-none"
-                        >
-                            ADD
-                        </button>
-                    </div>
-
-                    <select
-                        value={selectedState}
-                        onChange={(e) => setSelectedState(e.target.value)}
-                        className="w-full sm:w-40 px-4 py-2 bg-white border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm font-bold text-[var(--text-main)] h-fit"
-                    >
-                        <option value="all">Filtro por UF</option>
-                        {states.map(state => (
-                            <option key={state} value={state}>{state}</option>
-                        ))}
-                    </select>
-
-                    <div className="relative w-full sm:w-64 h-fit">
+                <div className={`flex flex-col gap-3 transition-all duration-300 origin-top ${showFilters ? 'scale-y-100 opacity-100 h-auto pb-2' : 'scale-y-0 opacity-0 h-0 overflow-hidden md:scale-y-100 md:opacity-100 md:h-auto md:flex-row md:items-center'}`}>
+                    <div className="relative w-full md:w-64 h-fit order-first md:order-last">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
                         <input
                             type="text"
-                            placeholder="Buscar empresa ou CNPJ..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm text-[var(--text-main)]"
+                            placeholder="Empresa ou CNPJ..."
+                            className="w-full pl-10 pr-4 py-3 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm text-[var(--text-main)]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
 
-                    {isSaaSAdmin && (
-                        <button
-                            onClick={() => exportLeadsToCSV(filteredLeads)}
-                            disabled={filteredLeads.length === 0}
-                            className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 shadow-sm"
-                            title="Exportar CRM"
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <input
+                                type="text"
+                                placeholder="Nicho..."
+                                className="flex-1 sm:w-32 px-4 py-3 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm font-medium text-[var(--text-main)]"
+                                value={newNiche}
+                                onChange={(e) => setNewNiche(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addNiche()}
+                            />
+                            <button
+                                onClick={addNiche}
+                                className="bg-[var(--primary)] text-white px-5 py-3 rounded-2xl text-xs font-black hover:bg-[var(--primary-hover)] transition-all border-none shadow-sm shadow-[var(--primary)]/20"
+                            >
+                                OK
+                            </button>
+                        </div>
+
+                        <select
+                            value={selectedState}
+                            onChange={(e) => setSelectedState(e.target.value)}
+                            className="w-full sm:w-32 px-4 py-3 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-sm font-bold text-[var(--text-main)] h-fit cursor-pointer"
                         >
-                            <Download size={18} />
-                        </button>
-                    )}
+                            <option value="all">Filtro UF</option>
+                            {states.map(state => (
+                                <option key={state} value={state}>{state}</option>
+                            ))}
+                        </select>
+
+                        {isSaaSAdmin && (
+                            <button
+                                onClick={() => exportLeadsToCSV(filteredLeads)}
+                                disabled={filteredLeads.length === 0}
+                                className="w-full sm:w-auto py-3 px-4 bg-white border border-slate-200 text-slate-500 rounded-2xl hover:bg-slate-50 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
+                            >
+                                <Download size={18} />
+                                <span className="sm:hidden font-bold">EXPORTAR CRM</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -186,24 +197,24 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                 </div>
             )}
 
-            <div className="flex border-b border-slate-200">
+            <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar scroll-smooth">
                 <button
                     onClick={() => setActiveSubTab('ready')}
-                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeSubTab === 'ready'
+                    className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeSubTab === 'ready'
                         ? 'border-[var(--primary)] text-[var(--primary)]'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    Prontos para Contato ({leads.filter(l => l.status === 'enriched').length})
+                    Prontos ({leads.filter(l => l.status === 'enriched').length})
                 </button>
                 <button
                     onClick={() => setActiveSubTab('pending')}
-                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${activeSubTab === 'pending'
+                    className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeSubTab === 'pending'
                         ? 'border-[var(--primary)] text-[var(--primary)]'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    Aguardando Enriquecimento ({leads.filter(l => l.status === 'pending' || l.status === 'failed').length})
+                    Pendentes ({leads.filter(l => l.status === 'pending' || l.status === 'failed').length})
                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 </button>
             </div>
@@ -338,76 +349,6 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                                         >
                                             <MoreHorizontal size={16} /> DETALHES / CRM
                                         </button>
-
-                                        {editingId === lead.id && (
-                                            <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-                                                <div className="bg-white rounded-[40px] p-10 max-w-xl w-full shadow-2xl space-y-6 animate-in zoom-in-95 duration-300">
-                                                    <div className="flex justify-between items-center border-b border-slate-100 pb-6">
-                                                        <div>
-                                                            <h3 className="font-black text-2xl text-slate-800 tracking-tight">Atualizar Lead</h3>
-                                                            <p className="text-sm text-slate-400 font-medium mt-1">{lead.razaoSocial}</p>
-                                                        </div>
-                                                        <button onClick={() => setEditingId(null)} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
-                                                            <X size={20} />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-6">
-                                                        <div>
-                                                            <label className="text-[10px] font-black uppercase text-blue-600 mb-2 block tracking-widest">Resposta do Cliente</label>
-                                                            <select
-                                                                className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
-                                                                value={editValues.contactResponse}
-                                                                onChange={e => setEditValues({ ...editValues, contactResponse: e.target.value })}
-                                                            >
-                                                                <option value="">Selecione uma resposta...</option>
-                                                                {RESPONSE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                            </select>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label className="text-[10px] font-black uppercase text-pink-600 mb-2 block tracking-widest">Instagram</label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-pink-500 focus:outline-none transition-all"
-                                                                    placeholder="@usuario"
-                                                                    value={editValues.instagram}
-                                                                    onChange={e => setEditValues({ ...editValues, instagram: e.target.value })}
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-[10px] font-black uppercase text-indigo-600 mb-2 block tracking-widest">Facebook</label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-indigo-500 focus:outline-none transition-all"
-                                                                    placeholder="id_pagina"
-                                                                    value={editValues.facebook}
-                                                                    onChange={e => setEditValues({ ...editValues, facebook: e.target.value })}
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="text-[10px] font-black uppercase text-blue-600 mb-2 block tracking-widest">Observações Internas</label>
-                                                            <textarea
-                                                                className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-3xl h-40 text-sm font-medium focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
-                                                                placeholder="Descreva as interações ou informações importantes deste lead..."
-                                                                value={editValues.observations}
-                                                                onChange={e => setEditValues({ ...editValues, observations: e.target.value })}
-                                                            />
-                                                        </div>
-
-                                                        <button
-                                                            onClick={() => handleSave(lead)}
-                                                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                                        >
-                                                            SALVAR ALTERAÇÕES NO CRM
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -415,6 +356,175 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                     ))
                 )}
             </div>
+
+            {/* Side Drawer for Editing Lead */}
+            {editingId && (() => {
+                const leadToEdit = leads.find(l => l.id === editingId);
+                if (!leadToEdit) return null;
+
+                return (
+                    <div className="fixed inset-0 z-[100] flex justify-end">
+                        {/* Backdrop with fade-in */}
+                        <div
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300"
+                            onClick={() => setEditingId(null)}
+                        />
+
+                        {/* Drawer Panel with slide-in from right */}
+                        <div className="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 ease-out">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 md:p-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)]">
+                                            <Save size={18} />
+                                        </div>
+                                        <h3 className="font-black text-xl text-slate-800 tracking-tight">Gestão de Lead</h3>
+                                    </div>
+                                    <p className="text-sm text-slate-500 font-medium truncate max-w-xs">{leadToEdit.razaoSocial}</p>
+                                </div>
+                                <button
+                                    onClick={() => setEditingId(null)}
+                                    className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 hover:shadow-sm transition-all shadow-sm"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-8 custom-scrollbar">
+                                {/* Action Bar / Search Links */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <a
+                                        href={`https://www.google.com/search?q=${encodeURIComponent(leadToEdit.razaoSocial)}`}
+                                        target="_blank" rel="noopener noreferrer"
+                                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all group"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-500 group-hover:scale-110 transition-transform">
+                                            <Globe size={16} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Google</span>
+                                    </a>
+                                    <a
+                                        href={`https://www.google.com/search?q=${encodeURIComponent(leadToEdit.razaoSocial + ' instagram')}`}
+                                        target="_blank" rel="noopener noreferrer"
+                                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-pink-200 hover:bg-pink-50/50 transition-all group"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-pink-500 group-hover:scale-110 transition-transform">
+                                            <Instagram size={16} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Insta Search</span>
+                                    </a>
+                                    <a
+                                        href={`https://www.google.com/search?q=${encodeURIComponent(leadToEdit.razaoSocial + ' facebook')}`}
+                                        target="_blank" rel="noopener noreferrer"
+                                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all group"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-indigo-500 group-hover:scale-110 transition-transform">
+                                            <Facebook size={16} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Face Search</span>
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(leadToEdit.cnpj);
+                                            alert('CNPJ Copiado!');
+                                        }}
+                                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-emerald-500 group-hover:scale-110 transition-transform">
+                                            <Search size={16} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Copy CNPJ</span>
+                                    </button>
+                                </div>
+
+                                {/* Form Sections */}
+                                <div className="space-y-6">
+                                    <section>
+                                        <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 mb-2 px-1 tracking-[0.15em]">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                            Status do Atendimento
+                                        </label>
+                                        <select
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:bg-white focus:border-[var(--primary)] focus:outline-none transition-all appearance-none cursor-pointer"
+                                            value={editValues.contactResponse}
+                                            onChange={e => setEditValues({ ...editValues, contactResponse: e.target.value })}
+                                        >
+                                            <option value="">Selecione uma resposta...</option>
+                                            {RESPONSE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        </select>
+                                    </section>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <section>
+                                            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 mb-2 px-1 tracking-[0.15em]">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-pink-500"></div>
+                                                Instagram Profil
+                                            </label>
+                                            <div className="relative group/input">
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:bg-white focus:border-pink-500/50 focus:outline-none transition-all"
+                                                    placeholder="@usuario"
+                                                    value={editValues.instagram}
+                                                    onChange={e => setEditValues({ ...editValues, instagram: e.target.value })}
+                                                />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-500 opacity-50 group-hover/input:opacity-100 transition-opacity">
+                                                    <Instagram size={18} />
+                                                </div>
+                                            </div>
+                                        </section>
+                                        <section>
+                                            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 mb-2 px-1 tracking-[0.15em]">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                                Facebook ID
+                                            </label>
+                                            <div className="relative group/input">
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:bg-white focus:border-indigo-500/50 focus:outline-none transition-all"
+                                                    placeholder="id_pagina"
+                                                    value={editValues.facebook}
+                                                    onChange={e => setEditValues({ ...editValues, facebook: e.target.value })}
+                                                />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500 opacity-50 group-hover/input:opacity-100 transition-opacity">
+                                                    <Facebook size={18} />
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+
+                                    <section>
+                                        <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 mb-2 px-1 tracking-[0.15em]">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                            Observações Internas
+                                        </label>
+                                        <textarea
+                                            className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl h-48 text-sm font-semibold focus:bg-white focus:border-amber-500/50 focus:outline-none transition-all resize-none shadow-inner"
+                                            placeholder="Descreva as interações ou informações importantes deste lead..."
+                                            value={editValues.observations}
+                                            onChange={e => setEditValues({ ...editValues, observations: e.target.value })}
+                                        />
+                                    </section>
+                                </div>
+                            </div>
+
+                            {/* Footer Actions */}
+                            <div className="p-8 border-t border-slate-100 bg-slate-50/50">
+                                <button
+                                    onClick={() => handleSave(leadToEdit)}
+                                    className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-[var(--primary)]/20 hover:bg-[var(--primary-hover)] hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 group"
+                                >
+                                    <Save size={20} className="group-hover:rotate-12 transition-transform" />
+                                    SALVAR E FINALIZAR ATENDIMENTO
+                                </button>
+                                <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">As alterações são sincronizadas com o banco de dados</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };

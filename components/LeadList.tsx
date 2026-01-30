@@ -61,7 +61,7 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
@@ -74,136 +74,97 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredLeads.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <Search className="text-slate-300" size={32} />
-                      </div>
-                      <p className="text-slate-400 font-medium">Nenhum lead encontrado.</p>
+            <tbody className="divide-y divide-slate-100">
+              {filteredLeads.map(lead => (
+                <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-800 line-clamp-1">{lead.razaoSocial}</span>
+                      <span className="text-[10px] text-slate-400 font-bold mt-0.5">{lead.cnpj}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{lead.email || '---'}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{lead.telefone || '---'}</td>
+                  <td className="px-6 py-4 text-sm text-slate-500">{lead.municipio}/{lead.uf}</td>
+                  <td className="px-6 py-4">
+                    <span className={`text-xs font-black ${lead.situacaoCadastral?.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {lead.situacaoCadastral || 'ATIVA'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${lead.status === 'enriched' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {lead.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right transform group-hover:scale-105 transition-transform">
+                    <div className="flex justify-end gap-1">
+                      <a href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`} target="_blank" className="p-2 text-slate-400 hover:text-blue-600"><Search size={16} /></a>
                     </div>
                   </td>
                 </tr>
-              ) : (
-                filteredLeads.map(lead => (
-                  <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-700 line-clamp-1">{lead.razaoSocial}</span>
-                        </div>
-                        <span className="text-xs text-slate-400 font-mono mt-1">{lead.cnpj}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {lead.email ? (
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Mail size={12} className="text-blue-500" />
-                          <span className="truncate max-w-[150px]">{lead.email}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-300 italic">Sem e-mail</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {lead.telefone ? (
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Phone size={12} className="text-emerald-500" />
-                          <span>{lead.telefone}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-300 italic">Sem telefone</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <MapPin size={12} className="text-slate-400" />
-                        <span>{lead.municipio || '---'}, {lead.uf || '--'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {lead.situacaoCadastral ? (
-                        <span className={`text-xs font-bold ${lead.situacaoCadastral.includes('BAIXADA') ? 'text-red-500' : 'text-slate-600'}`}>
-                          {lead.situacaoCadastral}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-300 italic">Pendente</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`
-                          inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
-                          ${lead.status === 'enriched' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : lead.status === 'failed' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'}
-                        `}>
-                          {lead.status === 'enriched' ? 'Enriquecido' : lead.status === 'failed' ? 'Falhou' : 'Pendente'}
-                        </span>
-                        {lead.contacted && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                            Contactado
-                          </span>
-                        )}
-                        {lead.situacaoCadastral?.includes('BAIXADA') && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400">
-                            Baixada
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        {/* Google Search */}
-                        <a
-                          href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Buscar no Google"
-                        >
-                          <Search size={16} />
-                        </a>
-
-                        {/* Website */}
-                        <a
-                          href={lead.website ? (lead.website.startsWith('http') ? lead.website : `https://${lead.website}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' site oficial')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`p-2 rounded-lg transition-all ${lead.website ? 'text-blue-500 hover:bg-blue-50' : 'text-slate-300 hover:text-slate-400 hover:bg-slate-50'}`}
-                          title={lead.website ? 'Ver Site' : 'Buscar Site'}
-                        >
-                          <Globe size={16} />
-                        </a>
-
-                        {/* Instagram */}
-                        <a
-                          href={lead.instagram ? (lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' instagram')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`p-2 rounded-lg transition-all ${lead.instagram ? 'text-pink-500 bg-pink-50 hover:bg-pink-100' : 'text-pink-400 hover:text-pink-600 hover:bg-pink-50'}`}
-                          title={lead.instagram ? 'Ver Instagram' : 'Buscar Instagram'}
-                        >
-                          <Instagram size={16} />
-                        </a>
-
-                        {/* Facebook */}
-                        <a
-                          href={lead.facebook ? (lead.facebook.startsWith('http') ? lead.facebook : `https://facebook.com/${lead.facebook}`) : `https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial + ' facebook')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`p-2 rounded-lg transition-all ${lead.facebook ? 'text-indigo-500 bg-indigo-50 hover:bg-indigo-100' : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
-                          title={lead.facebook ? 'Ver Facebook' : 'Buscar Facebook'}
-                        >
-                          <Facebook size={16} />
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredLeads.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 italic">Nenhum lead encontrado.</div>
+          ) : (
+            filteredLeads.map(lead => (
+              <div key={lead.id} className="p-5 space-y-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="min-w-0">
+                    <h3 className="font-black text-slate-800 text-sm truncate">{lead.razaoSocial}</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{lead.cnpj}</p>
+                  </div>
+                  <span className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${lead.status === 'enriched' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {lead.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <Mail size={14} className="text-blue-500 opacity-70" />
+                    <span className="truncate">{lead.email || '---'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <Phone size={14} className="text-emerald-500 opacity-70" />
+                    <span>{lead.telefone || '---'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 col-span-2">
+                    <MapPin size={14} className="text-slate-400 opacity-70" />
+                    <span>{lead.municipio || '---'}, {lead.uf || '--'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${lead.situacaoCadastral?.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
+                    {lead.situacaoCadastral || 'ATIVA'}
+                  </span>
+                  <div className="flex gap-2">
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`}
+                      target="_blank"
+                      className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 active:bg-blue-100 active:text-blue-600 transition-all"
+                    >
+                      <Search size={18} />
+                    </a>
+                    {lead.website && (
+                      <a
+                        href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                        target="_blank"
+                        className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600"
+                      >
+                        <Globe size={18} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
