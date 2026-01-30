@@ -24,28 +24,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
                     leadService.getStats()
                 ]);
 
-                // Merge profiles with any userId found in leads that might be missing from profiles table
-                const leadsUserIds = Array.from(new Set(leadsData.map(l => l.userId).filter(Boolean)));
-                const existingProfileIds = new Set(profilesData.map(p => p.id));
-
-                const mergedProfiles = [...profilesData];
-
-                // Track leads count per user
-                const userCounts: Record<string, number> = {};
+                // Track counts for EVERY userId found in the system
+                const userCounts: Record<string, { total: number, enriched: number, contacted: number }> = {};
                 leadsData.forEach(l => {
-                    if (l.userId) {
-                        userCounts[l.userId] = (userCounts[l.userId] || 0) + 1;
+                    const uid = l.userId;
+                    if (uid) {
+                        if (!userCounts[uid]) userCounts[uid] = { total: 0, enriched: 0, contacted: 0 };
+                        userCounts[uid].total++;
+                        if (l.status === 'enriched') userCounts[uid].enriched++;
+                        if (l.contacted) userCounts[uid].contacted++;
                     }
                 });
 
-                // Ensure all users with leads are in the profiles list
+                const existingProfileIds = new Set(profilesData.map(p => p.id));
+                const mergedProfiles = [...profilesData];
+
+                // Check for "Ghost" users (ID exists in leads but not in profiles table)
                 Object.keys(userCounts).forEach(uid => {
                     if (!existingProfileIds.has(uid)) {
                         mergedProfiles.push({
                             id: uid,
-                            email: 'vendedor.desconhecido@mci.br',
-                            fullname: 'Vendedor em Identificação',
-                            isNew: true
+                            email: 'vendedor.novo@mci.br',
+                            fullname: `Vendedor (ID: ${uid.substring(0, 8)}...)`,
+                            isGhost: true,
+                            created_at: new Date().toISOString()
                         });
                     }
                 });
@@ -146,19 +148,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border)]">
+                            {profiles.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                                        Nenhum vendedor identificado ainda.
+                                    </td>
+                                </tr>
+                            )}
+
                             {profiles.map(p => {
                                 const statsVendedor = getVendedorStats(p.id);
                                 return (
-                                    <tr key={p.id} className="hover:bg-[var(--bg-main)]/30 transition-colors group">
+                                    <tr key={p.id} className={`hover:bg-[var(--bg-main)]/30 transition-colors group ${p.isGhost ? 'bg-amber-50/30' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 ${p.isNew ? 'bg-amber-500' : 'bg-[var(--primary)]'} text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg`}>
-                                                    {(p.fullname || p.email || '?').charAt(0)}
+                                                <div className={`w-10 h-10 ${p.isGhost ? 'bg-amber-500' : 'bg-[var(--primary)]'} text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg`}>
+                                                    {(p.fullname || p.email || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-[var(--text-main)]">{p.fullname || 'Usuário sem Nome'}</div>
+                                                    <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
+                                                        {p.fullname || 'Usuário sem Nome'}
+                                                        {p.isGhost && (
+                                                            <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md uppercase font-black">Pendente Login</span>
+                                                        )}
+                                                    </div>
                                                     <div className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                                                        <Mail size={10} /> {p.email || 'Email não disponível'}
+                                                        <Mail size={10} /> {p.email || 'Email pendente'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -180,13 +195,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-xs font-bold text-[var(--text-main)]">
-                                                {p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Aguardando Login'}
+                                                {p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Desconhecido'}
                                             </div>
-                                            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Status de Registro</div>
+                                            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                                                {p.isGhost ? 'Detectado em Leads' : 'Registrado em'}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
                             })}
+
+                            {/* Unassigned Leads Row */}
+                            {allLeads.filter(l => !l.userId).length > 0 && (
+                                <tr className="bg-slate-50/80">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-slate-300 text-slate-600 rounded-2xl flex items-center justify-center font-black text-sm">
+                                                ?
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-600">Leads em Espera (Distribuição)</div>
+                                                <div className="text-xs text-slate-400">Aguardando solicitação da equipe</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="px-3 py-1 bg-white text-slate-400 rounded-full text-xs font-bold border border-slate-100">
+                                            {allLeads.filter(l => !l.userId).length}
+                                        </span>
+                                    </td>
+                                    <td colSpan={3} className="px-6 py-4 text-xs text-slate-400 italic">
+                                        Fila central aguardando vendedores.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
