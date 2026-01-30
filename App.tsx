@@ -188,13 +188,20 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
 
     setIsLoading(true);
     try {
+      const beforeCount = leads.length;
       await leadService.requestNewLeads(user.id, uf);
-      await loadLeads();
+      const data = await leadService.getAllLeads(user.id);
+      setLeads(data);
       await loadStats();
       await loadAvailableStates();
-      alert(`Sucesso! 20 novos leads${uf ? ` de ${uf}` : ''} foram atribuídos a você.`);
+
+      if (data.length > beforeCount) {
+        alert(`Sucesso! ${data.length - beforeCount} novos leads${uf ? ` de ${uf}` : ''} foram atribuídos a você.`);
+      } else {
+        alert(`Não há leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central que já foram enriquecidos. Aguarde o administrador processar a fila master.`);
+      }
     } catch (error) {
-      alert(`Não há mais leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central no momento.`);
+      alert(`Erro ao solicitar leads: ${error instanceof Error ? error.message : 'Serviço indisponível'}`);
     } finally {
       setIsLoading(false);
     }
@@ -342,9 +349,14 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
                   >
                     <option value="">Brasil (Tudo)</option>
                     {availableStates.map(uf => (
-                      <option key={uf} value={uf}>{uf}</option>
+                      <option key={uf} value={uf}>{uf.toUpperCase()}</option>
                     ))}
                   </select>
+                  {availableStates.length === 0 && (
+                    <p className="text-[9px] text-amber-600 font-bold px-1">
+                      Nota: Filtros de UF aparecem somente para leads que já foram enriquecidos pela TI.
+                    </p>
+                  )}
 
                   <button
                     onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}

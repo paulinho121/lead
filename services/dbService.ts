@@ -77,10 +77,15 @@ export const leadService = {
             .from('leads')
             .select('uf')
             .is('user_id', null)
-            .not('uf', 'is', null);
+            .not('uf', 'is', null)
+            .neq('uf', '')
+            .limit(1000);
 
-        if (error) return [];
-        const states = Array.from(new Set(data.map(item => item.uf))).sort();
+        if (error) {
+            console.error('Error fetching available states:', error);
+            return [];
+        }
+        const states = Array.from(new Set(data.map(item => item.uf).filter(Boolean))).sort();
         return states;
     },
 
