@@ -288,7 +288,7 @@ const App: React.FC = () => {
                 <button
                   onClick={() => exportLeadsToCSV(leads)}
                   disabled={leads.length === 0}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-[var(--primary)] hover:text-white transition-all disabled:opacity-50"
                 >
                   <Download size={14} /> EXPORTAR CSV
                 </button>
