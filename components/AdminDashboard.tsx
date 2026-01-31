@@ -6,9 +6,10 @@ import { Users, Activity, BarChart3, ShieldAlert, Clock, Mail, CheckCircle2 } fr
 
 interface AdminDashboardProps {
     adminEmail: string;
+    adminId?: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) => {
     const [allLeads, setAllLeads] = useState<Lead[]>([]);
     const [profiles, setProfiles] = useState<any[]>([]);
     const [stats, setStats] = useState({ total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 });
@@ -126,6 +127,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail }) => {
                             </h4>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Nova Seção de Distribuição movida para o topo */}
+            <div className="bg-[var(--bg-card)] rounded-[32px] border border-blue-200 shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="p-6 border-b border-blue-100 flex items-center justify-between bg-blue-50/50">
+                    <h3 className="font-bold text-blue-700 flex items-center gap-2">
+                        <Users size={20} />
+                        Distribuição de Leads para a Equipe
+                    </h3>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        Ação Necessária
+                    </span>
+                </div>
+                <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="space-y-2">
+                        <h4 className="text-xl font-black text-slate-900">Mover Leads para a Fila Master</h4>
+                        <p className="text-sm text-slate-500 max-w-xl leading-relaxed">
+                            Atualmente, você possui <strong>{getVendedorStats(adminId || '').total} leads</strong> vinculados à sua conta de administrador.
+                            Vendedores só podem solicitar leads que estão na <strong>Fila Master (Sem Dono)</strong>.
+                        </p>
+                        <div className="flex gap-4 text-xs font-bold">
+                            <span className="text-emerald-600 flex items-center gap-1">
+                                <CheckCircle2 size={14} /> {getVendedorStats(adminId || '').enriched} Enriquecidos
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (!adminId) {
+                                alert('Erro: ID do administrador não identificado. Tente atualizar a página.');
+                                return;
+                            }
+                            const stats = getVendedorStats(adminId);
+                            if (stats.total === 0) {
+                                alert('Você não possui leads na sua conta para liberar.');
+                                return;
+                            }
+                            if (window.confirm(`Deseja liberar todos os seus ${stats.total} leads para que os vendedores possam solicitá-los?`)) {
+                                try {
+                                    setIsLoading(true);
+                                    const count = await leadService.releaseAdminLeads(adminId);
+                                    alert(`Sucesso! ${count} leads foram movidos para a Fila Master e agora estão disponíveis para os vendedores.`);
+                                    window.location.reload();
+                                } catch (error) {
+                                    alert('Erro ao liberar leads: ' + (error as any).message);
+                                } finally {
+                                    setIsLoading(false);
+                                }
+                            }
+                        }}
+                        disabled={getVendedorStats(adminId || '').total === 0}
+                        className="w-full md:w-auto px-8 py-5 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:grayscale"
+                    >
+                        <Users size={24} className="group-hover:scale-110 transition-transform" />
+                        LIBERAR LEADS AGORA
+                    </button>
                 </div>
             </div>
 

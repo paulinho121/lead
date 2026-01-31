@@ -156,6 +156,21 @@ export const leadService = {
         }
     },
 
+    async releaseAdminLeads(adminId: string): Promise<number> {
+        if (!supabase) return 0;
+        const { data, error } = await supabase
+            .from('leads')
+            .update({ user_id: null })
+            .eq('user_id', adminId)
+            .select('*');
+
+        if (error) {
+            console.error('Error releasing leads:', error);
+            throw error;
+        }
+        return data?.length || 0;
+    },
+
     mapToDb(lead: Lead) {
         return {
             id: lead.id,

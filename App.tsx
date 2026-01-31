@@ -409,7 +409,7 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
           {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.STRATEGY && <Strategy leads={leads} />}
           {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
-            <AdminDashboard adminEmail={user.email} />
+            <AdminDashboard adminEmail={user.email} adminId={user.id} />
           )}
         </div>
       </main>
