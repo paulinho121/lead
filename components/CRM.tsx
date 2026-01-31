@@ -1,7 +1,7 @@
 // CRM Component - Improved Side Drawer for Lead Management
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save, SlidersHorizontal, Mail } from 'lucide-react';
+import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save, SlidersHorizontal, Mail, History } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
 
 interface CRMProps {
@@ -24,7 +24,7 @@ const RESPONSE_OPTIONS = [
 const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedState, setSelectedState] = useState<string>('all');
-    const [activeSubTab, setActiveSubTab] = useState<'ready' | 'pending'>('ready');
+    const [activeSubTab, setActiveSubTab] = useState<'ready' | 'contacted' | 'pending'>('ready');
     const [nicheFilters, setNicheFilters] = useState<string[]>(() => {
         const saved = localStorage.getItem('crm_niches');
         return saved ? JSON.parse(saved) : [];
@@ -59,8 +59,10 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
             );
 
             const matchesTab = activeSubTab === 'ready'
-                ? lead.status === 'enriched'
-                : (lead.status === 'pending' || lead.status === 'failed');
+                ? (lead.status === 'enriched' && !lead.contacted)
+                : activeSubTab === 'contacted'
+                    ? (lead.status === 'enriched' && lead.contacted)
+                    : (lead.status === 'pending' || lead.status === 'failed');
 
             return matchesSearch && matchesState && matchesTab && matchesNiche;
         })
@@ -200,21 +202,32 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
             <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar scroll-smooth">
                 <button
                     onClick={() => setActiveSubTab('ready')}
-                    className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeSubTab === 'ready'
+                    className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2 ${activeSubTab === 'ready'
                         ? 'border-[var(--primary)] text-[var(--primary)]'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    Prontos ({leads.filter(l => l.status === 'enriched').length})
+                    A Contatar ({leads.filter(l => l.status === 'enriched' && !l.contacted).length})
+                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                </button>
+                <button
+                    onClick={() => setActiveSubTab('contacted')}
+                    className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-2 ${activeSubTab === 'contacted'
+                        ? 'border-emerald-500 text-emerald-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <History size={14} />
+                    Histórico / Retentativa ({leads.filter(l => l.status === 'enriched' && l.contacted).length})
                 </button>
                 <button
                     onClick={() => setActiveSubTab('pending')}
                     className={`px-4 md:px-6 py-4 text-xs md:text-sm font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${activeSubTab === 'pending'
-                        ? 'border-[var(--primary)] text-[var(--primary)]'
+                        ? 'border-amber-500 text-amber-600'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    Pendentes ({leads.filter(l => l.status === 'pending' || l.status === 'failed').length})
+                    Fila Técnica ({leads.filter(l => l.status === 'pending' || l.status === 'failed').length})
                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 </button>
             </div>
