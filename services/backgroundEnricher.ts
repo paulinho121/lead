@@ -59,6 +59,8 @@ export const backgroundEnricher = {
                         }
                     }
 
+                    const isInactive = data.situacao_cadastral?.includes('BAIXADA') || data.situacao_cadastral?.includes('INAPTA');
+
                     const enrichedLead: Lead = {
                         ...lead,
                         razaoSocial: data.razao_social,
@@ -70,7 +72,8 @@ export const backgroundEnricher = {
                         uf: data.uf,
                         atividadePrincipal: data.cnae_fiscal_descricao,
                         situacaoCadastral: data.situacao_cadastral,
-                        status: 'enriched'
+                        status: isInactive ? 'failed' : 'enriched',
+                        error: isInactive ? `Empresa ${data.situacao_cadastral}` : undefined
                     };
                     onUpdate(enrichedLead);
                     onLog('success', `Sucesso em ${count}/${total}: ${data.razao_social}`);

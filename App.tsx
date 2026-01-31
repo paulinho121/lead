@@ -179,11 +179,11 @@ const App: React.FC = () => {
 
   const handleRequestLeads = async (uf?: string) => {
     if (!user) return;
-    const remaining = leads.filter(l => !l.contacted).length;
+    const remaining = leads.filter(l => l.status === 'enriched' && !l.contacted).length;
     if (remaining > 0) {
-      alert(`⚠️ Bloqueio de Segurança: Você possui ${remaining} leads que ainda não foram contactados. 
+      alert(`⚠️ Bloqueio de Segurança: Você possui ${remaining} leads prontos no seu CRM que ainda não foram contactados. 
 
-Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o contato ou resposta de todos os leads atuais no seu CRM.`);
+Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o contato ou resposta de todos os leads atuais.`);
       return;
     }
 
