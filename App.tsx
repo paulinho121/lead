@@ -151,7 +151,8 @@ const App: React.FC = () => {
   const addLeads = async (newLeads: Lead[]) => {
     if (!user) return;
     try {
-      const leadsWithUser = newLeads.map(l => ({ ...l, userId: user.id }));
+      const isAdmin = user.email === 'paulofernandoautomacao@gmail.com';
+      const leadsWithUser = newLeads.map(l => ({ ...l, userId: isAdmin ? null : user.id }));
       await leadService.upsertLeads(leadsWithUser);
       await loadLeads();
       await loadStats();
@@ -337,15 +338,16 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
             {user?.email !== 'paulofernandoautomacao@gmail.com' && (
               <div className="space-y-4 pt-2">
                 <div className="bg-white dark:bg-slate-800/50 p-4 rounded-2xl border border-[var(--border)] shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1">
+                  <label htmlFor="uf-store-filter" className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1 cursor-pointer">
                     <Globe size={12} className="text-[var(--primary)]" />
                     Filtrar por UF
-                  </div>
+                  </label>
 
                   <select
+                    id="uf-store-filter"
                     value={selectedRequestUF}
                     onChange={(e) => setSelectedRequestUF(e.target.value)}
-                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all"
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all cursor-pointer"
                   >
                     <option value="">Brasil (Tudo)</option>
                     {availableStates.map(uf => (
