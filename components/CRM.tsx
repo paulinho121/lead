@@ -1,7 +1,7 @@
 // CRM Component - Improved Side Drawer for Lead Management
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save, SlidersHorizontal } from 'lucide-react';
+import { Search, Phone, MessageSquare, CheckCircle2, Circle, MoreHorizontal, Instagram, Facebook, Globe, Download, X, Save, SlidersHorizontal, Mail } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
 
 interface CRMProps {
@@ -454,6 +454,25 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                                             <option value="">Selecione uma resposta...</option>
                                             {RESPONSE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                         </select>
+                                    </section>
+
+                                    <section>
+                                        <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 mb-2 px-1 tracking-[0.15em]">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]"></div>
+                                            E-mail de Contato
+                                        </label>
+                                        <div className="relative group/input">
+                                            <input
+                                                type="email"
+                                                className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:bg-white focus:border-[var(--primary)]/50 focus:outline-none transition-all"
+                                                placeholder="exemplo@empresa.com.br"
+                                                value={editValues.email}
+                                                onChange={e => setEditValues({ ...editValues, email: e.target.value })}
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-50 group-hover/input:opacity-100 transition-opacity">
+                                                <Mail size={18} />
+                                            </div>
+                                        </div>
                                     </section>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
