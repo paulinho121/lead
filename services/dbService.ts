@@ -108,7 +108,7 @@ export const leadService = {
     async requestNewLeads(vendedorId: string, uf?: string): Promise<void> {
         if (!supabase) return;
         const { error } = await supabase.rpc('solicitar_novos_leads', {
-            vendedor_id: vendedorId,
+            p_vendedor_id: vendedorId,
             p_uf: uf || null
         });
         if (error) {

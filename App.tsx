@@ -201,7 +201,7 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
         alert(`Não há leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central que já foram enriquecidos. Aguarde o administrador processar a fila master.`);
       }
     } catch (error) {
-      alert(`Erro ao solicitar leads: ${error instanceof Error ? error.message : 'Serviço indisponível'}`);
+      alert(`Erro ao solicitar leads: ${error?.message || error?.details || (error instanceof Error ? error.message : 'Serviço indisponível')}`);
     } finally {
       setIsLoading(false);
     }
