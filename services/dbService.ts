@@ -104,6 +104,15 @@ export const leadService = {
         if (error) console.error('Error syncing profile:', error);
     },
 
+    async updateProfileTheme(userId: string, theme: string): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('profiles')
+            .update({ theme, updated_at: new Date().toISOString() })
+            .eq('id', userId);
+        if (error) throw error;
+    },
+
     async updateHeartbeat(userId: string): Promise<void> {
         if (!supabase) return;
         await supabase

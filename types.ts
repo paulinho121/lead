@@ -40,6 +40,7 @@ export interface Profile {
   online_status?: boolean;
   role?: 'admin' | 'vendedor';
   target_leads?: number;
+  theme?: string;
 }
 
 export interface Message {

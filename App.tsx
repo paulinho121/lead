@@ -9,10 +9,9 @@ import Enricher from './components/Enricher';
 import Strategy from './components/Strategy';
 import CRM from './components/CRM';
 import { exportLeadsToCSV } from './services/exportService';
-import { Download, RefreshCw, Sparkles, Loader2, Users, Globe } from 'lucide-react';
+import { Download, RefreshCw, Sparkles, Loader2, Users, Globe, Palette, Sun, Moon, Menu, X } from 'lucide-react';
 import { leadService } from './services/dbService';
 import { backgroundEnricher } from './services/backgroundEnricher';
-import { Sun, Moon, Menu, X } from 'lucide-react';
 import { Analytics } from "@vercel/analytics/react"
 import Login from './components/Login';
 import Register from './components/Register';
@@ -20,6 +19,7 @@ import AdminDashboard from './components/AdminDashboard';
 import { isLeadFullyManaged } from './hooks/useLeadManagement';
 import Mural from './components/Mural.tsx';
 import TeamChat from './components/TeamChat';
+import ThemeSelector, { THEMES } from './components/ThemeSelector';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
@@ -40,6 +40,18 @@ const App: React.FC = () => {
     return 'light';
   });
   const [rankingLeads, setRankingLeads] = useState<any[]>([]);
+  const [userTheme, setUserTheme] = useState(() => {
+    return localStorage.getItem('user-manto-theme') || 'default';
+  });
+  const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
+
+  useEffect(() => {
+    const activeTheme = (THEMES as any)[userTheme] || THEMES.default;
+    document.documentElement.style.setProperty('--primary', activeTheme.primary);
+    document.documentElement.style.setProperty('--primary-hover', activeTheme.hover);
+    document.documentElement.style.setProperty('--accent', activeTheme.primary);
+    localStorage.setItem('user-manto-theme', userTheme);
+  }, [userTheme]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -61,7 +73,7 @@ const App: React.FC = () => {
         loadLeads(session.user);
         loadStats();
         loadAvailableStates();
-        loadProfiles();
+        loadProfiles(session.user);
         loadRanking();
       }
     });
@@ -74,7 +86,7 @@ const App: React.FC = () => {
         loadLeads(session.user);
         loadStats();
         loadAvailableStates();
-        loadProfiles();
+        loadProfiles(session.user);
         loadRanking();
       }
       else {
@@ -129,10 +141,15 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  const loadProfiles = async () => {
+  const loadProfiles = async (currentUser?: any) => {
     try {
       const data = await leadService.getAllProfiles();
       setProfiles(data);
+      const activeUser = currentUser || user;
+      if (activeUser) {
+        const myProfile = data.find(p => p.id === activeUser.id);
+        if (myProfile?.theme) setUserTheme(myProfile.theme);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -353,20 +370,50 @@ Para solicitar um novo lote, você precisa para CADA lead:
 
         <div className="p-6 border-b border-[var(--border)] hidden md:block">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-14 h-10 flex items-center justify-center">
-              <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
+            <div key={userTheme} className="w-14 h-14 flex items-center justify-center relative bg-white/10 rounded-2xl overflow-hidden border border-white/10">
+              {(THEMES as any)[userTheme]?.shield ? (
+                <>
+                  <img
+                    src={(THEMES as any)[userTheme].shield}
+                    alt="Team Shield"
+                    className="w-12 h-12 object-contain animate-in zoom-in-50 duration-500 z-10"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.opacity = '0';
+                      const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                      if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 hidden items-center justify-center font-black text-2xl text-[var(--primary)]"
+                    style={{ display: 'none' }}
+                  >
+                    {(THEMES as any)[userTheme].name.charAt(0)}
+                  </div>
+                </>
+              ) : (
+                <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
+              )}
             </div>
             <h1 className="font-bold text-xl tracking-tight text-[var(--text-main)]">LeadPro <span className="text-[var(--primary)]">B2B</span></h1>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">Inteligência de Vendas</p>
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] transition-colors"
-              title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
-            >
-              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-            </button>
+            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{(THEMES as any)[userTheme]?.name || 'Inteligência de Vendas'}</p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsThemeSelectorOpen(true)}
+                className="p-1.5 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] transition-colors"
+                title="Personalizar Tema"
+              >
+                <Palette size={14} />
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] transition-colors"
+                title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
+              >
+                {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -521,6 +568,14 @@ Para solicitar um novo lote, você precisa para CADA lead:
         </div>
       </main>
       <TeamChat currentUser={user} profiles={profiles} />
+      {isThemeSelectorOpen && user && (
+        <ThemeSelector
+          userId={user.id}
+          currentTheme={userTheme}
+          onClose={() => setIsThemeSelectorOpen(false)}
+          onThemeSelect={(id) => setUserTheme(id)}
+        />
+      )}
       <Analytics />
     </div>
   );
