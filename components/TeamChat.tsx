@@ -30,6 +30,7 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
 
     // Filter out current user from chat list
     const chatUsers = profiles.filter(p => p.id !== currentUser.id);
+    const onlineCount = chatUsers.filter(p => p.online_status).length;
 
     useEffect(() => {
         // Subscribe to real-time messages for ALL users to catch notifications
@@ -90,6 +91,28 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
         }
     }, [messages]);
 
+    const loadUnreadCounts = async () => {
+        try {
+            // Note: In this MVP we fetch recent messages and count those where receiver is ME and is_read is false
+            // This is a simplified version using existing getMessages or similar
+            const data = await leadService.getMessages(currentUser.id, 'all');
+            const counts: Record<string, number> = {};
+            let total = 0;
+
+            data.forEach((msg: any) => {
+                if (msg.receiver_id === currentUser.id && !msg.is_read) {
+                    counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+                    total++;
+                }
+            });
+
+            setUnreadMessages(counts);
+            setTotalUnread(total);
+        } catch (e) {
+            console.error('Error loading unread counts:', e);
+        }
+    };
+
     const loadMessages = async () => {
         if (!selectedUser) return;
         setIsLoading(true);
@@ -139,9 +162,19 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                     className="w-16 h-16 bg-[var(--primary)] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all group relative"
                 >
                     <MessageCircle size={28} className="group-hover:rotate-12 transition-transform" />
+
+                    {/* Unread Badge */}
                     {totalUnread > 0 && (
-                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full border-4 border-white flex items-center justify-center animate-bounce shadow-lg">
+                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center animate-bounce shadow-lg z-10">
                             {totalUnread}
+                        </span>
+                    )}
+
+                    {/* Online Indicator */}
+                    {onlineCount > 0 && (
+                        <span className="absolute bottom-0 right-0 flex items-center gap-1 bg-white px-1.5 py-0.5 rounded-full border border-slate-100 shadow-sm">
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            <span className="text-[8px] font-black text-slate-600">{onlineCount}</span>
                         </span>
                     )}
                 </button>
