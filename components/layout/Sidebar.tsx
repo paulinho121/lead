@@ -270,9 +270,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         Sair da Conta (Logout)
                     </button>
 
-                    <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1 opacity-40">
+                    <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1.5 opacity-40 group hover:opacity-100 transition-opacity duration-500">
                         <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Software Original</span>
-                        <span className="text-[8px] font-bold text-[var(--text-muted)]">VERSÃO DE FÁBRICA</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase">Feito com amor por</span>
+                            <span className="text-[10px] font-black text-[var(--primary)] uppercase tracking-tighter">Paulinho Fernando</span>
+                        </div>
                     </div>
                 </div>
             </div>
