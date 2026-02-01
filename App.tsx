@@ -425,6 +425,11 @@ Para solicitar um novo lote, você precisa para CADA lead:
             >
               Sair da Conta (Logout)
             </button>
+
+            <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1 opacity-40">
+              <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Versão de Fábrica</span>
+              <span className="text-[8px] font-bold text-[var(--text-muted)]">v1.0.0-PRO</span>
+            </div>
           </div>
         </div>
       </aside>
@@ -432,7 +437,7 @@ Para solicitar um novo lote, você precisa para CADA lead:
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-[var(--bg-main)]">
         <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} profiles={profiles} />}
+          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} profiles={profiles} userEmail={user?.email} />}
           {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
           {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}

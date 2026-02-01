@@ -131,25 +131,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
             </div>
 
             {/* Nova Seção de Distribuição movida para o topo */}
-            <div className="bg-[var(--bg-card)] rounded-[32px] border border-blue-200 shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-4 duration-1000">
-                <div className="p-6 border-b border-blue-100 flex items-center justify-between bg-blue-50/50">
-                    <h3 className="font-bold text-blue-700 flex items-center gap-2">
+            <div className="bg-[var(--bg-card)] rounded-[32px] border border-[var(--border)] shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="p-6 border-b border-[var(--border)] flex items-center justify-between bg-blue-50/5 dark:bg-blue-500/5">
+                    <h3 className="font-bold text-[var(--primary)] flex items-center gap-2">
                         <Users size={20} />
                         Distribuição de Leads para a Equipe
                     </h3>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    <span className="px-3 py-1 bg-[var(--info-light)] text-[var(--primary)] rounded-full text-[10px] font-black uppercase tracking-wider border border-[var(--primary)]/10">
                         Ação Necessária
                     </span>
                 </div>
                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
                     <div className="space-y-2">
-                        <h4 className="text-xl font-black text-slate-900">Mover Leads para a Fila Master</h4>
-                        <p className="text-sm text-slate-500 max-w-xl leading-relaxed">
+                        <h4 className="text-xl font-black text-[var(--text-main)]">Mover Leads para a Fila Master</h4>
+                        <p className="text-sm text-[var(--text-muted)] max-w-xl leading-relaxed font-medium">
                             Atualmente, você possui <strong>{getVendedorStats(adminId || '').total} leads</strong> vinculados à sua conta de administrador.
                             Vendedores só podem solicitar leads que estão na <strong>Fila Master (Sem Dono)</strong>.
                         </p>
                         <div className="flex gap-4 text-xs font-bold">
-                            <span className="text-emerald-600 flex items-center gap-1">
+                            <span className="text-emerald-500 flex items-center gap-1">
                                 <CheckCircle2 size={14} /> {getVendedorStats(adminId || '').enriched} Enriquecidos
                             </span>
                         </div>
@@ -179,7 +179,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                             }
                         }}
                         disabled={getVendedorStats(adminId || '').total === 0}
-                        className="w-full md:w-auto px-8 py-5 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:grayscale"
+                        className="w-full md:w-auto px-8 py-5 bg-[var(--primary)] text-white rounded-2xl font-black text-sm hover:bg-[var(--primary-hover)] transition-all shadow-xl shadow-[var(--primary)]/20 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:grayscale"
                     >
                         <Users size={24} className="group-hover:scale-110 transition-transform" />
                         LIBERAR LEADS AGORA
@@ -188,7 +188,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
             </div>
 
             <div className="bg-[var(--bg-card)] rounded-[32px] border border-[var(--border)] shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-main)]/50">
+                <div className="p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-main)]">
                     <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
                         <Clock className="text-[var(--primary)]" size={20} />
                         Logs & Performance da Equipe
@@ -197,7 +197,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-[var(--bg-main)]/30 border-b border-[var(--border)]">
+                            <tr className="bg-[var(--bg-main)] border-b border-[var(--border)]">
                                 <th className="px-6 py-4 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Vendedor</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest text-center">Leads Totais</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest text-center">Enriquecidos</th>
@@ -208,7 +208,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                         <tbody className="divide-y divide-[var(--border)]">
                             {profiles.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-[var(--text-muted)] italic">
                                         Nenhum vendedor identificado ainda.
                                     </td>
                                 </tr>
@@ -217,17 +217,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                             {profiles.map(p => {
                                 const statsVendedor = getVendedorStats(p.id);
                                 return (
-                                    <tr key={p.id} className={`hover:bg-[var(--bg-main)]/30 transition-colors group ${p.isGhost ? 'bg-amber-50/30' : ''}`}>
+                                    <tr key={p.id} className={`hover:bg-[var(--bg-main)] transition-colors group ${p.isGhost ? 'bg-amber-500/5' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 ${p.isGhost ? 'bg-amber-500' : 'bg-[var(--primary)]'} text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg`}>
+                                                <div className={`w-10 h-10 ${p.isGhost ? 'bg-amber-500' : 'bg-[var(--primary)]'} text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg shadow-[var(--primary)]/10`}>
                                                     {(p.fullname || p.email || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
                                                         {p.fullname || 'Usuário sem Nome'}
                                                         {p.isGhost && (
-                                                            <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md uppercase font-black">Pendente Login</span>
+                                                            <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-md uppercase font-black border border-amber-500/20">Pendente Login</span>
                                                         )}
                                                     </div>
                                                     <div className="text-xs text-[var(--text-muted)] flex items-center gap-1">
@@ -237,7 +237,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="px-3 py-1 bg-white text-slate-800 rounded-full text-xs font-bold border border-slate-200 shadow-sm">
+                                            <span className="px-3 py-1 bg-[var(--bg-main)] text-[var(--text-main)] rounded-full text-xs font-bold border border-[var(--border)] shadow-sm">
                                                 {statsVendedor.total}
                                             </span>
                                         </td>
@@ -247,7 +247,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-full text-xs font-bold border border-emerald-100 dark:border-emerald-900/30">
+                                            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold border border-emerald-500/20">
                                                 {statsVendedor.total > 0 ? `${Math.round((statsVendedor.contacted / statsVendedor.total) * 100)}%` : '0%'}
                                             </span>
                                         </td>
@@ -255,7 +255,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                             <div className="text-xs font-bold text-[var(--text-main)]">
                                                 {p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Desconhecido'}
                                             </div>
-                                            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                                            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-bold">
                                                 {p.isGhost ? 'Detectado em Leads' : 'Registrado em'}
                                             </div>
                                         </td>

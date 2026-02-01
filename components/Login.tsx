@@ -134,9 +134,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRegister }) => {
                 </div>
 
                 {/* Footer Credits */}
-                <p className="text-center mt-10 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[3px] opacity-40">
-                    &copy; 2026 MCI LEADPRO PROPRIETARY SYSTEM
-                </p>
+                <div className="text-center mt-10 space-y-1">
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[3px] opacity-40">
+                        &copy; 2026 MCI LEADPRO PROPRIETARY
+                    </p>
+                    <p className="text-[9px] font-black text-[var(--primary)] uppercase tracking-[2px] opacity-60">
+                        Versão de Fábrica | v1.0.0
+                    </p>
+                </div>
             </div>
         </div>
     );

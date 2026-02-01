@@ -9,9 +9,11 @@ interface DashboardProps {
   leads: Lead[];
   totalLeadCount?: number;
   profiles?: any[];
+  userEmail?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount, profiles = [] }) => {
+const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount, profiles = [], userEmail }) => {
+  const isCearaFan = userEmail === 'paulofernandoautomacao@gmail.com';
   const stats = useMemo(() => {
     const total = totalLeadCount || leads.length;
     const enriched = leads.filter(l => l.status === 'enriched').length;
@@ -65,10 +67,19 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, totalLeadCount, profiles =
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
-          <p className="text-slate-500 text-sm mt-1">Saúde e progresso da sua base de dados.</p>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative">
+        <div className="relative">
+          {isCearaFan && (
+            <div className="absolute -left-12 -top-12 sm:-left-20 sm:-top-16 pointer-events-none select-none animate-ceara-float z-0">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Cear%C3%A1_Sporting_Club_logo.png/410px-Cear%C3%A1_Sporting_Club_logo.png"
+                className="w-24 sm:w-32 opacity-30 drop-shadow-2xl"
+                alt="Ceará SC"
+              />
+            </div>
+          )}
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight relative z-10">Visão Geral</h2>
+          <p className="text-slate-500 text-sm mt-1 relative z-10">Saúde e progresso da sua base de dados.</p>
         </div>
         <button
           onClick={() => exportLeadsToCSV(leads)}
