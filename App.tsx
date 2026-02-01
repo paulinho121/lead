@@ -435,7 +435,7 @@ Para solicitar um novo lote, você precisa para CADA lead:
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-4 pb-20 space-y-1 overflow-y-auto custom-scrollbar">
           {NAVIGATION.filter(item => {
             const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com';
             // Vendedores veem Dashboard, CRM, Mural e Estratégia
@@ -484,12 +484,12 @@ Para solicitar um novo lote, você precisa para CADA lead:
             <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>ARENA DE CONFERÊNCIA</span>
           </button>
         </nav>
-        <div className="pt-10 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
+        <div className="pt-6 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-2 mb-1">
-              <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest">Ações do Sistema</div>
+            <div className="flex items-center justify-between px-2 mb-0.5">
+              <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Ações do Sistema</div>
               <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
                 <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
               </div>
             </div>
@@ -517,8 +517,8 @@ Para solicitar um novo lote, você precisa para CADA lead:
 
             {/* Salesperson Specific Actions */}
             {user?.email !== 'paulofernandoautomacao@gmail.com' && (
-              <div className="space-y-4 pt-2">
-                <div className="bg-white dark:bg-slate-800/50 p-4 rounded-2xl border border-[var(--border)] shadow-sm space-y-3">
+              <div className="space-y-3 pt-1">
+                <div className="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-[var(--border)] shadow-sm space-y-2">
                   <label htmlFor="uf-store-filter" className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1 cursor-pointer">
                     <Globe size={12} className="text-[var(--primary)]" />
                     Filtrar por UF
@@ -528,7 +528,7 @@ Para solicitar um novo lote, você precisa para CADA lead:
                     id="uf-store-filter"
                     value={selectedRequestUF}
                     onChange={(e) => setSelectedRequestUF(e.target.value)}
-                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all cursor-pointer"
+                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg py-2 px-2.5 text-[11px] font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all cursor-pointer"
                   >
                     <option value="">Brasil (Tudo)</option>
                     {availableStates.map(uf => (
@@ -544,23 +544,23 @@ Para solicitar um novo lote, você precisa para CADA lead:
                   <button
                     onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-white py-3.5 px-4 rounded-xl text-xs font-black hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] py-3 px-4 rounded-lg text-[10px] font-black hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
                   >
-                    {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
-                    SOLICITAR +20 LEADS
+                    {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
+                    SOLICITAR LEADS
                   </button>
                 </div>
 
                 <button
                   onClick={processQueue}
                   disabled={isEnriching || leads.filter(l => (l.status === 'pending' || (l.status === 'enriched' && !l.email))).length === 0}
-                  className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-xs font-black transition-all disabled:opacity-50 ${leads.some(l => l.status === 'pending' || (l.status === 'enriched' && !l.email))
+                  className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-[10px] font-black transition-all disabled:opacity-50 ${leads.some(l => l.status === 'pending' || (l.status === 'enriched' && !l.email))
                     ? 'bg-amber-600 text-white hover:bg-amber-700 animate-pulse ring-4 ring-amber-500/10'
                     : 'bg-slate-800 text-white hover:bg-black'
                     }`}
                 >
-                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  ENRIQUECER MEUS LEADS
+                  {isEnriching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  ENRIQUECER LEADS
                 </button>
               </div>
             )}
