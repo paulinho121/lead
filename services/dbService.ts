@@ -24,8 +24,8 @@ export const leadService = {
         return (data || []).map(leadService.mapFromDb);
     },
 
-    async getStats(): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number }> {
-        if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 };
+    async getStats(): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number, unassigned: number }> {
+        if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 };
 
         try {
             const [
@@ -34,19 +34,18 @@ export const leadService = {
                 { count: pending },
                 { count: failed },
                 { count: hasEmail },
-                { count: hasPhone }
+                { count: hasPhone },
+                { count: unassigned }
             ] = await Promise.all([
                 supabase.from('leads').select('*', { count: 'exact', head: true }),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched'),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).not('email', 'is', null).neq('email', ''),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).not('telefone', 'is', null).neq('telefone', '')
+                supabase.from('leads').select('*', { count: 'exact', head: true }).not('telefone', 'is', null).neq('telefone', ''),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).is('user_id', null)
             ]);
 
-            // Note: This is an approximation since a lead can have both. 
-            // For a perfect count we'd need a more complex query or an RPC, 
-            // but for a dashboard this is usually acceptable or we can just use the larger one as a floor.
             const estimatedContacts = Math.max(hasEmail || 0, hasPhone || 0);
 
             return {
@@ -54,11 +53,12 @@ export const leadService = {
                 enriched: enriched || 0,
                 pending: pending || 0,
                 failed: failed || 0,
-                hasContact: estimatedContacts
+                hasContact: estimatedContacts,
+                unassigned: unassigned || 0
             };
         } catch (error) {
             console.error('Error fetching global stats:', error);
-            return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 };
+            return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 };
         }
     },
 

@@ -17,7 +17,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) => {
     const [allLeads, setAllLeads] = useState<Lead[]>([]);
     const [profiles, setProfiles] = useState<Profile[]>([]);
-    const [stats, setStats] = useState({ total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 });
+    const [stats, setStats] = useState({ total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeView, setActiveView] = useState<'overview' | 'audit'>('overview');
@@ -165,7 +165,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                         {[
                             { label: 'Total de Leads', value: stats.total, icon: <Activity />, color: 'blue' },
                             { label: 'Conversão Global', value: `${Math.round((allLeads.filter(l => l.stage === 'closed_won').length / Math.max(1, allLeads.filter(l => l.userId).length)) * 100)}%`, icon: <TrendingUp />, color: 'emerald' },
-                            { label: 'Aguardando Distribuição', value: allLeads.filter(l => !l.userId).length, icon: <Clock />, color: 'amber' },
+                            { label: 'Aguardando Distribuição', value: (stats as any).unassigned || 0, icon: <Clock />, color: 'amber' },
                             { label: 'Leads em Negociação', value: allLeads.filter(l => l.stage === 'negotiation').length, icon: <Target />, color: 'purple' },
                         ].map((kpi, i) => (
                             <div key={i} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all group hover-scale">
