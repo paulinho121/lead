@@ -97,12 +97,57 @@ export const leadService = {
                 id: userId,
                 email: email,
                 fullname: fullname || email.split('@')[0],
+                online_status: true,
+                last_seen_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
+            });
+        if (error) console.error('Error syncing profile:', error);
+    },
+
+    async updateHeartbeat(userId: string): Promise<void> {
+        if (!supabase) return;
+        await supabase
+            .from('profiles')
+            .update({
+                last_seen_at: new Date().toISOString(),
+                online_status: true
+            })
+            .eq('id', userId);
+    },
+
+    async setOffline(userId: string): Promise<void> {
+        if (!supabase) return;
+        await supabase
+            .from('profiles')
+            .update({ online_status: false })
+            .eq('id', userId);
+    },
+
+    async getMessages(userId: string, targetId: string): Promise<any[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${userId},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${userId})`)
+            .order('created_at', { ascending: true });
 
         if (error) {
-            console.error('Error syncing profile:', error);
+            console.error('Error fetching messages:', error);
+            return [];
         }
+        return data || [];
+    },
+
+    async sendMessage(senderId: string, receiverId: string, content: string): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('messages')
+            .insert({
+                sender_id: senderId,
+                receiver_id: receiverId,
+                content
+            });
+        if (error) throw error;
     },
 
     async requestNewLeads(vendedorId: string, uf?: string): Promise<void> {
@@ -143,6 +188,38 @@ export const leadService = {
         }
     },
 
+    async getGlobalRanking(): Promise<any[]> {
+        if (!supabase) return [];
+        // Busca todos os leads atribuídos que foram contatados
+        const { data, error } = await supabase
+            .from('leads')
+            .select('user_id, contacted, email')
+            .not('user_id', 'is', null);
+
+        if (error) {
+            console.error('Error fetching ranking data:', error);
+            return [];
+        }
+
+        return data;
+    },
+
+    async getContactedLeads(): Promise<Lead[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('contacted', true)
+            .order('captured_at', { ascending: false })
+            .limit(1000);
+
+        if (error) {
+            console.error('Error fetching contacted leads:', error);
+            return [];
+        }
+        return (data || []).map(leadService.mapFromDb);
+    },
+
     async clearAllLeads(): Promise<void> {
         if (!supabase) return;
         const { error } = await supabase
@@ -171,6 +248,34 @@ export const leadService = {
         return data?.length || 0;
     },
 
+    async recycleLeads(days: number): Promise<number> {
+        if (!supabase) return 0;
+
+        // Calcular data de corte
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffIso = cutoff.toISOString();
+
+        // Buscar leads estagnados (atribuídos, não contatados e não atualizados há X dias)
+        const { data, error } = await supabase
+            .from('leads')
+            .update({
+                user_id: null,
+                observations: 'Lead reciclado automaticamente por inatividade.'
+            })
+            .not('user_id', 'is', null)
+            .eq('contacted', false)
+            .lt('updated_at', cutoffIso)
+            .select();
+
+        if (error) {
+            console.error('Error recycling leads:', error);
+            throw error;
+        }
+
+        return data?.length || 0;
+    },
+
     mapToDb(lead: Lead) {
         return {
             id: lead.id,
@@ -195,7 +300,12 @@ export const leadService = {
             niche: lead.niche,
             website: lead.website,
             facebook: lead.facebook,
-            email_not_found: lead.emailNotFound
+            email_not_found: lead.emailNotFound,
+            updated_at: new Date().toISOString(),
+            stage: lead.stage,
+            lead_score: lead.leadScore,
+            next_contact_date: lead.nextContactDate,
+            lost_reason: lead.lostReason
         };
     },
 
@@ -223,7 +333,12 @@ export const leadService = {
             niche: dbLead.niche,
             website: dbLead.website,
             facebook: dbLead.facebook,
-            emailNotFound: dbLead.email_not_found
+            emailNotFound: dbLead.email_not_found,
+            lastUpdated: dbLead.updated_at,
+            stage: dbLead.stage,
+            leadScore: dbLead.lead_score,
+            nextContactDate: dbLead.next_contact_date,
+            lostReason: dbLead.lost_reason
         };
     }
 };

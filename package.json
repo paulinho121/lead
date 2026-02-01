@@ -1,7 +1,7 @@
 {
   "name": "b2b-lead-enrichment-pro",
   "private": true,
-  "version": "1.0.0-factory",
+  "version": "1.0.0-fabrica",
   "type": "module",
   "scripts": {
     "dev": "vite",

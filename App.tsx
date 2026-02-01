@@ -18,6 +18,8 @@ import Login from './components/Login';
 import Register from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
 import { isLeadFullyManaged } from './hooks/useLeadManagement';
+import Mural from './components/Mural.tsx';
+import TeamChat from './components/TeamChat';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
@@ -37,6 +39,7 @@ const App: React.FC = () => {
     }
     return 'light';
   });
+  const [rankingLeads, setRankingLeads] = useState<any[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -59,6 +62,7 @@ const App: React.FC = () => {
         loadStats();
         loadAvailableStates();
         loadProfiles();
+        loadRanking();
       }
     });
 
@@ -71,15 +75,59 @@ const App: React.FC = () => {
         loadStats();
         loadAvailableStates();
         loadProfiles();
+        loadRanking();
       }
       else {
         setLeads([]);
         setProfiles([]);
+        setRankingLeads([]);
       }
     }) || { data: { subscription: null } };
 
     return () => subscription?.unsubscribe();
   }, []);
+
+  // Heartbeat for online status
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(() => {
+        leadService.updateHeartbeat(user.id);
+      }, 30000); // Pulse every 30s
+
+      // Cleanup on visibility change or tab close
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          leadService.setOffline(user.id);
+        } else {
+          leadService.updateHeartbeat(user.id);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        leadService.setOffline(user.id);
+      };
+    }
+  }, [user]);
+
+  // Real-time profiles update
+  useEffect(() => {
+    if (user) {
+      const channel = supabase
+        .channel('profiles_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          loadProfiles();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
 
   const loadProfiles = async () => {
     try {
@@ -105,6 +153,15 @@ const App: React.FC = () => {
       setTotalLeadCount(stats.total);
     } catch (error) {
       console.error("Erro ao carregar stats:", error);
+    }
+  };
+
+  const loadRanking = async () => {
+    try {
+      const data = await leadService.getGlobalRanking();
+      setRankingLeads(data);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -198,6 +255,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    if (user) await leadService.setOffline(user.id);
     await supabase?.auth.signOut();
   };
 
@@ -315,9 +373,9 @@ Para solicitar um novo lote, você precisa para CADA lead:
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {NAVIGATION.filter(item => {
             const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com';
-            // Vendedores veem Dashboard, CRM e Estratégia
+            // Vendedores veem Dashboard, CRM, Mural e Estratégia
             if (!isAdmin) {
-              return item.id === 'dashboard' || item.id === 'crm' || item.id === 'strategy';
+              return item.id === 'dashboard' || item.id === 'crm' || item.id === 'mural' || item.id === 'strategy';
             }
             // Admin sees everything
             return true;
@@ -340,7 +398,13 @@ Para solicitar um novo lote, você precisa para CADA lead:
         </nav>
         <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
-            <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest px-2">Ações do Sistema</div>
+            <div className="flex items-center justify-between px-2 mb-1">
+              <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest">Ações do Sistema</div>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
+              </div>
+            </div>
 
             {/* Admin Specific Actions */}
             {user?.email === 'paulofernandoautomacao@gmail.com' && (
@@ -428,7 +492,7 @@ Para solicitar um novo lote, você precisa para CADA lead:
 
             <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1 opacity-40">
               <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Versão de Fábrica</span>
-              <span className="text-[8px] font-bold text-[var(--text-muted)]">v1.0.0-PRO</span>
+              <span className="text-[8px] font-bold text-[var(--text-muted)]">v1.0.0-FABRICA</span>
             </div>
           </div>
         </div>
@@ -437,16 +501,26 @@ Para solicitar um novo lote, você precisa para CADA lead:
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-[var(--bg-main)]">
         <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} profiles={profiles} userEmail={user?.email} />}
+          {activeTab === AppTab.DASHBOARD && (
+            <Dashboard
+              leads={leads}
+              rankingLeads={rankingLeads}
+              totalLeadCount={totalLeadCount}
+              profiles={profiles}
+              userEmail={user?.email}
+            />
+          )}
           {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
           {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
-          {activeTab === AppTab.STRATEGY && <Strategy leads={leads} />}
+          {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
+          {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
             <AdminDashboard adminEmail={user.email} adminId={user.id} />
           )}
         </div>
       </main>
+      <TeamChat currentUser={user} profiles={profiles} />
       <Analytics />
     </div>
   );

@@ -22,40 +22,37 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ leads, onEditLead, onUpdateLe
         if (!lead) return;
 
         // Optimistic Update logic
-        let updatedLead = { ...lead };
+        let updatedLead = {
+            ...lead,
+            stage: destination.droppableId as any,
+            contacted: destination.droppableId !== 'lead'
+        };
 
-        const FINISHED_STATUSES = ['Não tem interesse / Recusou', 'Não atende / Telefone Errado', 'Interessado - Agendar Reunião'];
-
-        if (destination.droppableId === 'ready') {
-            updatedLead.contacted = false;
-        } else if (destination.droppableId === 'contacted') {
-            updatedLead.contacted = true;
-            // Se veio de finalizados ou não tem status, coloca um status de negociação
-            if (!updatedLead.contactResponse || FINISHED_STATUSES.includes(updatedLead.contactResponse)) {
-                updatedLead.contactResponse = 'Em Negociação';
-            }
-        } else if (destination.droppableId === 'finished') {
-            updatedLead.contacted = true;
-            // Se não for um dos status de finalização, força um padrão positivo
-            if (!FINISHED_STATUSES.includes(updatedLead.contactResponse || '')) {
-                updatedLead.contactResponse = 'Interessado - Agendar Reunião';
-            }
+        // Logic to update status based on stage
+        if (destination.droppableId === 'closed_won') {
+            updatedLead.contactResponse = 'Interessado - Agendar Reunião';
+        } else if (destination.droppableId === 'closed_lost') {
+            updatedLead.contactResponse = 'Não tem interesse / Recusou';
         }
 
         await onUpdateLead(updatedLead);
     }, [leads, onUpdateLead]);
 
-    const readyLeads = useMemo(() =>
-        leads.filter(l => l.status === 'enriched' && !l.contacted)
-        , [leads]);
+    const getLeadsByStage = (stage: string) => {
+        return leads.filter(l => {
+            if (stage === 'lead') return !l.stage || l.stage === 'lead';
+            return l.stage === stage;
+        });
+    };
 
-    const contactingLeads = useMemo(() =>
-        leads.filter(l => l.status === 'enriched' && l.contacted && !['Não tem interesse / Recusou', 'Não atende / Telefone Errado', 'Interessado - Agendar Reunião'].includes(l.contactResponse || ''))
-        , [leads]);
-
-    const finishedLeads = useMemo(() =>
-        leads.filter(l => l.status === 'enriched' && l.contacted && ['Não tem interesse / Recusou', 'Não atende / Telefone Errado', 'Interessado - Agendar Reunião'].includes(l.contactResponse || ''))
-        , [leads]);
+    const columns = [
+        { id: 'lead', title: 'Lead / Novo', color: 'blue' },
+        { id: 'contacted', title: 'Em Contato', color: 'cyan' },
+        { id: 'presentation', title: 'Apresentação', color: 'purple' },
+        { id: 'negotiation', title: 'Negociação', color: 'amber' },
+        { id: 'closed_won', title: 'Ganhos', color: 'emerald' },
+        { id: 'closed_lost', title: 'Perdidos', color: 'slate' },
+    ];
 
     // Limit to prevent performance issues with DnD and hundreds of items
     // Only the first 100 in each column are draggable/visible in Kanban
@@ -65,30 +62,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ leads, onEditLead, onUpdateLe
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="w-full relative">
                 <div className="flex gap-6 overflow-x-auto pb-12 pt-2 px-4 md:px-8 lg:px-12 custom-scrollbar min-h-[750px] -mx-4 md:-mx-8 lg:-mx-12">
-                    <KanbanColumn
-                        id="ready"
-                        title="A Contatar"
-                        leads={limitLeads(readyLeads)}
-                        color="blue"
-                        onEditLead={onEditLead}
-                    />
-                    <KanbanColumn
-                        id="contacted"
-                        title="Em Negociação"
-                        leads={limitLeads(contactingLeads)}
-                        color="amber"
-                        onEditLead={onEditLead}
-                    />
-                    <KanbanColumn
-                        id="finished"
-                        title="Finalizados"
-                        leads={limitLeads(finishedLeads)}
-                        color="emerald"
-                        onEditLead={onEditLead}
-                    />
+                    {columns.map(col => (
+                        <KanbanColumn
+                            key={col.id}
+                            id={col.id}
+                            title={col.title}
+                            leads={limitLeads(getLeadsByStage(col.id))}
+                            color={col.color as any}
+                            onEditLead={onEditLead}
+                        />
+                    ))}
                 </div>
             </div>
-            {(readyLeads.length > 100 || contactingLeads.length > 100 || finishedLeads.length > 100) && (
+            {(getLeadsByStage('lead').length > 100 || getLeadsByStage('contacted').length > 100) && (
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center mt-2">
                     * Exibindo apenas os 100 leads mais recentes por coluna no modo Kanban para performance. Use o modo lista para ver todos os {leads.length} leads.
                 </p>

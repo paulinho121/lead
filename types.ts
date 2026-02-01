@@ -24,6 +24,31 @@ export interface Lead {
   niche?: string;
   facebook?: string;
   emailNotFound?: boolean;
+  lastUpdated?: string;
+  stage?: 'lead' | 'contacted' | 'presentation' | 'negotiation' | 'closed_won' | 'closed_lost';
+  leadScore?: number;
+  nextContactDate?: string;
+  lostReason?: string;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  fullname: string;
+  avatar_url?: string;
+  last_seen_at?: string;
+  online_status?: boolean;
+  role?: 'admin' | 'vendedor';
+  target_leads?: number;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
 }
 
 export interface EnrichmentData {
@@ -45,5 +70,6 @@ export enum AppTab {
   ENRICH = 'enrich',
   CRM = 'crm',
   STRATEGY = 'strategy',
+  MURAL = 'mural',
   ADMIN = 'admin'
 }

@@ -2,7 +2,7 @@
 import { Lead } from '../types';
 import { fetchCNPJData } from './enrichmentService';
 import { normalizeEmail, normalizePhone } from '../constants';
-import { parseUnstructuredText, discoverEmail, extractContactFromWeb } from './geminiService';
+import { parseUnstructuredText, discoverEmail, extractContactFromWeb, scoreLead } from './geminiService';
 import { firecrawlService } from './firecrawlService';
 
 export const backgroundEnricher = {
@@ -60,6 +60,7 @@ export const backgroundEnricher = {
                     }
 
                     const isInactive = data.situacao_cadastral?.includes('BAIXADA') || data.situacao_cadastral?.includes('INAPTA');
+                    const score = !isInactive ? await scoreLead(data) : 0;
 
                     const enrichedLead: Lead = {
                         ...lead,
@@ -73,6 +74,7 @@ export const backgroundEnricher = {
                         atividadePrincipal: data.cnae_fiscal_descricao,
                         situacaoCadastral: data.situacao_cadastral,
                         status: isInactive ? 'failed' : 'enriched',
+                        leadScore: score,
                         error: isInactive ? `Empresa ${data.situacao_cadastral}` : undefined
                     };
                     onUpdate(enrichedLead);
