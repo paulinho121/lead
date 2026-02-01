@@ -380,7 +380,7 @@ Para solicitar um novo lote, você precisa para CADA lead:
         )}
 
         <div className="p-6 border-b border-[var(--border)] hidden md:block">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2">
             <div key={userTheme} className="w-14 h-14 flex items-center justify-center relative bg-white/10 rounded-2xl overflow-hidden border border-white/10">
               {(THEMES as any)[userTheme]?.shield ? (
                 <>
@@ -409,28 +409,9 @@ Para solicitar um novo lote, você precisa para CADA lead:
               <span className="text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-80 leading-none mb-1">
                 {user?.user_metadata?.fullname || 'Vendedor Pro'}
               </span>
-              <h1 className="font-black text-xl tracking-tighter text-[var(--text-main)] flex items-center gap-1.5">
-                LeadPro <span className="px-1.5 py-0.5 bg-[var(--primary)] text-[var(--text-on-primary)] rounded-md text-[10px] font-black">B2B</span>
+              <h1 className="font-black text-xl tracking-tighter text-[var(--text-main)]">
+                LeadPro <span className="text-[var(--primary)]">B2B</span>
               </h1>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-[2px]">{(THEMES as any)[userTheme]?.name || 'Inteligência de Vendas'}</p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setIsThemeSelectorOpen(true)}
-                className="p-1.5 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] transition-colors"
-                title="Personalizar Tema"
-              >
-                <Palette size={14} />
-              </button>
-              <button
-                onClick={toggleTheme}
-                className="p-1.5 rounded-lg hover:bg-[var(--bg-main)] text-[var(--text-muted)] transition-colors"
-                title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
-              >
-                {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-              </button>
             </div>
           </div>
         </div>
@@ -486,34 +467,36 @@ Para solicitar um novo lote, você precisa para CADA lead:
         </nav>
         <div className="pt-6 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-2 mb-0.5">
-              <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Ações do Sistema</div>
-              <div className="flex items-center gap-1">
-                <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
+            {/* Status & Actions - Visible only on Mobile Drawer */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between px-2 mb-3">
+                <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Ações do Sistema</div>
+                <div className="flex items-center gap-1">
+                  <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
+                  <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
+                </div>
               </div>
-            </div>
 
-            {/* Admin Specific Actions */}
-            {user?.email === 'paulofernandoautomacao@gmail.com' && (
-              <>
-                <button
-                  onClick={() => exportLeadsToCSV(leads)}
-                  disabled={leads.length === 0}
-                  className="w-full flex items-center justify-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-[var(--primary)] hover:text-white transition-all disabled:opacity-50"
-                >
-                  <Download size={14} /> EXPORTAR CSV
-                </button>
-                <button
-                  onClick={processQueue}
-                  disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                >
-                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  ENRIQUECER FILA MASTER
-                </button>
-              </>
-            )}
+              {user?.email === 'paulofernandoautomacao@gmail.com' && (
+                <div className="space-y-2 mb-4">
+                  <button
+                    onClick={() => exportLeadsToCSV(leads)}
+                    disabled={leads.length === 0}
+                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 py-2.5 px-4 rounded-xl text-xs font-bold"
+                  >
+                    <Download size={14} /> EXPORTAR CSV
+                  </button>
+                  <button
+                    onClick={processQueue}
+                    disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-bold"
+                  >
+                    {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    FILA MASTER
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Salesperson Specific Actions */}
             {user?.email !== 'paulofernandoautomacao@gmail.com' && (
@@ -535,11 +518,6 @@ Para solicitar um novo lote, você precisa para CADA lead:
                       <option key={uf} value={uf}>{uf.toUpperCase()}</option>
                     ))}
                   </select>
-                  {availableStates.length === 0 && (
-                    <p className="text-[9px] text-amber-600 font-bold px-1">
-                      Nota: Filtros de UF aparecem somente para leads que já foram enriquecidos pela TI.
-                    </p>
-                  )}
 
                   <button
                     onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}
@@ -587,28 +565,85 @@ Para solicitar um novo lote, você precisa para CADA lead:
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto bg-[var(--bg-main)]">
-        <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          {activeTab === AppTab.DASHBOARD && (
-            <Dashboard
-              leads={leads}
-              rankingLeads={rankingLeads}
-              totalLeadCount={totalLeadCount}
-              profiles={profiles}
-              userEmail={user?.email}
-            />
-          )}
-          {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
-          {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
-          {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
-          {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
-          {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
-          {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
-            <AdminDashboard adminEmail={user.email} adminId={user.id} />
-          )}
-          {activeTab === AppTab.REUNIAO && (
-            <MeetingRoom userEmail={user?.email || ''} userName={user?.user_metadata?.fullname || 'Vendedor'} />
-          )}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-main)]">
+        {/* Global Top Bar (Harmonious Desk Layout) */}
+        <header className="hidden md:flex h-20 items-center justify-between px-10 bg-[var(--bg-sidebar)]/50 backdrop-blur-xl border-b border-[var(--border)] z-30">
+          <div className="flex items-center gap-6">
+            <h2 className="text-sm font-black text-[var(--text-main)] uppercase tracking-[4px]">
+              {(NAVIGATION.find(n => n.id === activeTab)?.name || (activeTab === AppTab.ADMIN ? 'Painel Diretor' : 'Arena de Conferência')).toUpperCase()}
+            </h2>
+            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-2xl border border-emerald-500/10">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Sistema Online</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* System Quick Actions for Admin in Top Bar */}
+            {user?.email === 'paulofernandoautomacao@gmail.com' && (
+              <div className="flex items-center gap-2 mr-4">
+                <button
+                  onClick={() => exportLeadsToCSV(leads)}
+                  disabled={leads.length === 0}
+                  className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-[var(--border)] px-4 py-2.5 rounded-xl text-[10px] font-black text-[var(--text-main)] hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm"
+                >
+                  <Download size={14} /> EXPORTAR CSV
+                </button>
+                <button
+                  onClick={processQueue}
+                  disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
+                  className="flex items-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] px-4 py-2.5 rounded-xl text-[10px] font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20"
+                >
+                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  FILA MASTER
+                </button>
+              </div>
+            )}
+
+            <div className="h-8 w-px bg-[var(--border)] mx-2"></div>
+
+            <div className="flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl border border-[var(--border)]">
+              <button
+                onClick={() => setIsThemeSelectorOpen(true)}
+                className="p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-[var(--text-main)] transition-all shadow-sm"
+                title="Personalizar Tema"
+              >
+                <Palette size={18} />
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-[var(--text-main)] transition-all shadow-sm"
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Scaled Content Container */}
+        <div className="flex-1 overflow-auto p-4 md:p-10 lg:p-12">
+          <div className="max-w-[1600px] mx-auto">
+            {activeTab === AppTab.DASHBOARD && (
+              <Dashboard
+                leads={leads}
+                rankingLeads={rankingLeads}
+                totalLeadCount={totalLeadCount}
+                profiles={profiles}
+                userEmail={user?.email}
+              />
+            )}
+            {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
+            {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
+            {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
+            {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
+            {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
+            {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
+              <AdminDashboard adminEmail={user.email} adminId={user.id} />
+            )}
+            {activeTab === AppTab.REUNIAO && (
+              <MeetingRoom userEmail={user?.email || ''} userName={user?.user_metadata?.fullname || 'Vendedor'} />
+            )}
+          </div>
         </div>
       </main>
       <TeamChat currentUser={user} profiles={profiles} />
