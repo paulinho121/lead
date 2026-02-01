@@ -2,13 +2,13 @@ import { Lead } from '../types';
 import { supabase } from './supabase';
 
 export const leadService = {
-    async getAllLeads(userId?: string): Promise<Lead[]> {
+    async getAllLeads(userId?: string, page: number = 0, pageSize: number = 50): Promise<Lead[]> {
         if (!supabase) return [];
         let query = supabase
             .from('leads')
             .select('*')
             .order('captured_at', { ascending: false })
-            .limit(20000);
+            .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (userId) {
             query = query.eq('user_id', userId);
@@ -27,33 +27,71 @@ export const leadService = {
     async getStats(): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number }> {
         if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 };
 
-        const { count: total, error: e1 } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-        const { count: enriched, error: e2 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched');
-        const { count: pending, error: e3 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']);
-        const { count: failed, error: e4 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed');
+        try {
+            const [
+                { count: total },
+                { count: enriched },
+                { count: pending },
+                { count: failed },
+                { count: hasEmail },
+                { count: hasPhone }
+            ] = await Promise.all([
+                supabase.from('leads').select('*', { count: 'exact', head: true }),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched'),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).not('email', 'is', null).neq('email', ''),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).not('telefone', 'is', null).neq('telefone', '')
+            ]);
 
-        // Count leads that have email OR phone
-        const { count: withEmail, error: e5 } = await supabase.from('leads').select('*', { count: 'exact', head: true }).not('email', 'is', null);
+            // Note: This is an approximation since a lead can have both. 
+            // For a perfect count we'd need a more complex query or an RPC, 
+            // but for a dashboard this is usually acceptable or we can just use the larger one as a floor.
+            const estimatedContacts = Math.max(hasEmail || 0, hasPhone || 0);
 
-        if (e1 || e2 || e3 || e4 || e5) {
-            console.error('Error fetching stats');
+            return {
+                total: total || 0,
+                enriched: enriched || 0,
+                pending: pending || 0,
+                failed: failed || 0,
+                hasContact: estimatedContacts
+            };
+        } catch (error) {
+            console.error('Error fetching global stats:', error);
+            return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0 };
         }
-
-        return {
-            total: total || 0,
-            enriched: enriched || 0,
-            pending: pending || 0,
-            failed: failed || 0,
-            hasContact: withEmail || 0 // Simplificação: priorizando email para o dashboard
-        };
     },
 
-    async getAdminLeads(): Promise<Lead[]> {
+    async getDashboardData(): Promise<{ stateStats: any[], salespersonStats: any[] }> {
+        if (!supabase) return { stateStats: [], salespersonStats: [] };
+
+        // For charts, we fetch a significant sample (e.g., 2000 leads) to get meaningful distributions
+        // In a real production app, this would be an RPC or an Edge Function returning pre-aggregated data
+        const { data, error } = await supabase
+            .from('leads')
+            .select('uf, user_id, contacted, email')
+            .limit(5000);
+
+        if (error) return { stateStats: [], salespersonStats: [] };
+
+        const stateStats = data.reduce((acc: any[], lead) => {
+            if (!lead.uf) return acc;
+            const existing = acc.find(a => a.name === lead.uf);
+            if (existing) existing.value += 1;
+            else acc.push({ name: lead.uf, value: 1 });
+            return acc;
+        }, []).sort((a, b) => b.value - a.value).slice(0, 5);
+
+        return { stateStats, salespersonStats: data }; // We'll return the raw data for salesperson processing for now
+    },
+
+    async getAdminLeads(page: number = 0, pageSize: number = 50): Promise<Lead[]> {
         if (!supabase) return [];
         const { data, error } = await supabase
             .from('leads')
             .select('*')
-            .limit(20000);
+            .order('captured_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
             console.error('Error fetching admin leads:', error);

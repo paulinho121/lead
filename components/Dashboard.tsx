@@ -1,9 +1,12 @@
 
+
 import React, { useMemo } from 'react';
 import { Lead } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { CheckCircle2, Clock, TrendingUp, Download, Users, Trophy, Sparkles } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
+import Skeleton from './Skeleton';
+
 
 interface DashboardProps {
   leads: Lead[];
@@ -11,17 +14,65 @@ interface DashboardProps {
   totalLeadCount?: number;
   profiles?: any[];
   userEmail?: string;
+  loading?: boolean;
+  externalStateData?: any[];
+  externalSalespersonData?: any[];
+  isAdmin?: boolean;
+  globalStats?: { enriched: number, pending: number, failed: number, hasContact: number };
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ leads, rankingLeads = [], totalLeadCount, profiles = [], userEmail }) => {
-  const isCearaFan = userEmail === 'paulofernandoautomacao@gmail.com';
+const Dashboard: React.FC<DashboardProps> = ({
+  leads,
+  rankingLeads = [],
+  totalLeadCount,
+  profiles = [],
+  userEmail,
+  loading,
+  externalStateData,
+  externalSalespersonData,
+  isAdmin,
+  globalStats
+}) => {
+  const isCearaFan = isAdmin && userEmail === 'paulofernandoautomacao@gmail.com';
+
+  if (loading) {
+    // ... skeleton code ...
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-2">
+            <Skeleton width={200} height={32} />
+            <Skeleton width={300} height={16} />
+          </div>
+          <Skeleton width={150} height={48} />
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Skeleton height={100} />
+          <Skeleton height={100} />
+          <Skeleton height={100} />
+          <Skeleton height={100} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Skeleton height={350} />
+          <Skeleton height={350} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Skeleton height={200} />
+          <Skeleton height={200} />
+        </div>
+      </div>
+    );
+  }
 
   const stats = useMemo(() => {
     const total = totalLeadCount || leads.length;
-    const enriched = leads.filter(l => l.status === 'enriched').length;
-    const pending = leads.filter(l => l.status === 'pending' || l.status === 'processing').length;
-    const failed = leads.filter(l => l.status === 'failed').length;
-    const hasContact = leads.filter(l => l.email || l.telefone).length;
+    const enriched = globalStats?.enriched ?? leads.filter(l => l.status === 'enriched').length;
+    const pending = globalStats?.pending ?? leads.filter(l => l.status === 'pending' || l.status === 'processing').length;
+    const failed = globalStats?.failed ?? leads.filter(l => l.status === 'failed').length;
+    const hasContact = globalStats?.hasContact ?? leads.filter(l => l.email || l.telefone).length;
 
     const statusData = [
       { name: 'Enriquecidos', value: enriched, color: '#00A38E' },
@@ -29,18 +80,16 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, rankingLeads = [], totalLe
       { name: 'Pendentes', value: pending, color: '#f59e0b' },
     ];
 
-    const stateData = leads.reduce((acc: any[], lead) => {
+    const stateData = externalStateData || leads.reduce((acc: any[], lead) => {
+      // ... same logic
       if (!lead.uf) return acc;
       const existing = acc.find(a => a.name === lead.uf);
-      if (existing) {
-        existing.value += 1;
-      } else {
-        acc.push({ name: lead.uf, value: 1 });
-      }
+      if (existing) existing.value += 1;
+      else acc.push({ name: lead.uf, value: 1 });
       return acc;
     }, []).sort((a, b) => b.value - a.value).slice(0, 5);
 
-    const sourceData = rankingLeads.length > 0 ? rankingLeads : leads;
+    const sourceData = externalSalespersonData || (rankingLeads.length > 0 ? rankingLeads : leads);
 
     const salespersonData = sourceData.reduce((acc: any[], item) => {
       if (!item.userId && !item.user_id) return acc;

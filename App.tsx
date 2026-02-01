@@ -21,16 +21,19 @@ import Mural from './components/Mural.tsx';
 import TeamChat from './components/TeamChat';
 import ThemeSelector, { THEMES } from './components/ThemeSelector';
 import MeetingRoom from './components/MeetingRoom';
+import Sidebar from './components/layout/Sidebar';
+import TopBar from './components/layout/TopBar';
+import { useAuth } from './hooks/useAuth';
+
 
 const App: React.FC = () => {
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedRequestUF, setSelectedRequestUF] = useState<string>('');
@@ -45,6 +48,10 @@ const App: React.FC = () => {
     return localStorage.getItem('user-manto-theme') || 'default';
   });
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 50;
+  const [dashboardData, setDashboardData] = useState<{ stateStats: any[], salespersonStats: any[] }>({ stateStats: [], salespersonStats: [] });
 
   useEffect(() => {
     const activeTheme = (THEMES as any)[userTheme] || THEMES.default;
@@ -52,7 +59,6 @@ const App: React.FC = () => {
     document.documentElement.style.setProperty('--primary-hover', activeTheme.hover);
     document.documentElement.style.setProperty('--accent', activeTheme.primary);
 
-    // Only 'brasil' (Yellow) needs dark text. All other teams (Black, Red, Green, etc) need white text.
     const textOnPrimary = activeTheme.id === 'brasil' ? '#0f172a' : '#ffffff';
     document.documentElement.style.setProperty('--text-on-primary', textOnPrimary);
 
@@ -67,53 +73,33 @@ const App: React.FC = () => {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const [totalLeadCount, setTotalLeadCount] = useState(0);
+  const [leadStats, setLeadStats] = useState<{ enriched: number, pending: number, failed: number, hasContact: number } | undefined>(undefined);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase?.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      setUser(session?.user ?? null);
-      if (session) {
-        leadService.syncProfile(session.user.id, session.user.email!, session.user.user_metadata?.fullname);
-        loadLeads(session.user);
-        loadStats();
-        loadAvailableStates();
-        loadProfiles(session.user);
-        loadRanking();
-      }
-    });
-
-    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-      setUser(session?.user ?? null);
-      if (session) {
-        leadService.syncProfile(session.user.id, session.user.email!, session.user.user_metadata?.fullname);
-        loadLeads(session.user);
-        loadStats();
-        loadAvailableStates();
-        loadProfiles(session.user);
-        loadRanking();
-      }
-      else {
-        setLeads([]);
-        setProfiles([]);
-        setRankingLeads([]);
-      }
-    }) || { data: { subscription: null } };
-
-    return () => subscription?.unsubscribe();
-  }, []);
+    if (isAuthenticated && user) {
+      leadService.syncProfile(user.id, user.email!, user.user_metadata?.fullname);
+      loadLeads(user);
+      loadStats();
+      loadAvailableStates();
+      loadProfiles(user);
+      loadRanking();
+      loadDashboardData();
+    } else if (!isAuthenticated) {
+      setLeads([]);
+      setProfiles([]);
+      setRankingLeads([]);
+    }
+  }, [isAuthenticated, user]);
 
   // Heartbeat for online status
   useEffect(() => {
     if (user) {
-      // Initial heartbeat
       leadService.updateHeartbeat(user.id);
-
       const interval = setInterval(() => {
         leadService.updateHeartbeat(user.id);
-      }, 30000); // Pulse every 30s
+      }, 30000);
 
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
@@ -174,6 +160,7 @@ const App: React.FC = () => {
     try {
       const stats = await leadService.getStats();
       setTotalLeadCount(stats.total);
+      setLeadStats(stats);
     } catch (error) {
       console.error("Erro ao carregar stats:", error);
     }
@@ -188,17 +175,39 @@ const App: React.FC = () => {
     }
   };
 
-  const loadLeads = async (currentUser?: any) => {
-    setIsLoading(true);
+  const loadDashboardData = async () => {
+    try {
+      const data = await leadService.getDashboardData();
+      setDashboardData(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const loadLeads = async (currentUser?: any, page: number = 0) => {
+    if (page === 0) setIsLoading(true);
     try {
       const activeUser = currentUser || user;
-      const isAdmin = activeUser?.email === 'paulofernandoautomacao@gmail.com';
-      const data = await leadService.getAllLeads(isAdmin ? undefined : activeUser?.id);
-      setLeads(data);
+      const data = await leadService.getAllLeads(isAdmin ? undefined : activeUser?.id, page, PAGE_SIZE);
+
+      if (page === 0) {
+        setLeads(data);
+      } else {
+        setLeads(prev => [...prev, ...data]);
+      }
+
+      setCurrentPage(page);
+      setHasMore(data.length === PAGE_SIZE);
     } catch (error) {
       console.error("Erro ao carregar leads:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMoreLeads = () => {
+    if (!isLoading && hasMore) {
+      loadLeads(user, currentPage + 1);
     }
   };
 
@@ -247,7 +256,6 @@ const App: React.FC = () => {
   const addLeads = async (newLeads: Lead[]) => {
     if (!user) return;
     try {
-      const isAdmin = user.email === 'paulofernandoautomacao@gmail.com';
       const leadsWithUser = newLeads.map(l => ({ ...l, userId: isAdmin ? null : user.id }));
       await leadService.upsertLeads(leadsWithUser);
       await loadLeads();
@@ -260,18 +268,12 @@ const App: React.FC = () => {
   const updateLead = async (updatedLead: Lead) => {
     if (!user) return;
     try {
-      // 1. Optimistic UI update
       setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
-
-      // 2. Database update
       const leadWithUser = { ...updatedLead, userId: user.id };
       await leadService.upsertLeads([leadWithUser]);
-
-      // 3. Stats update (silent)
       loadStats();
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
-      // Reload leads from server if update fails
       loadLeads();
       alert("Houve um erro ao sincronizar o lead com o servidor. A página foi atualizada.");
     }
@@ -287,13 +289,7 @@ const App: React.FC = () => {
     const unmanagedLeads = leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l));
 
     if (unmanagedLeads.length > 0) {
-      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos. 
-
-Para solicitar um novo lote, você precisa para CADA lead:
-1. Adicionar o Instagram
-2. Adicionar o Facebook
-3. Adicionar o E-mail (ou marcar 'E-mail não encontrado')
-4. Marcar como Contatado/Finalizado`);
+      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos.`);
       return;
     }
 
@@ -309,319 +305,57 @@ Para solicitar um novo lote, você precisa para CADA lead:
       if (data.length > beforeCount) {
         alert(`Sucesso! ${data.length - beforeCount} novos leads${uf ? ` de ${uf}` : ''} foram atribuídos a você.`);
       } else {
-        alert(`Não há leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central que já foram enriquecidos. Aguarde o administrador processar a fila master.`);
+        alert(`Não há leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central.`);
       }
     } catch (error) {
-      alert(`Erro ao solicitar leads: ${error?.message || error?.details || (error instanceof Error ? error.message : 'Serviço indisponível')}`);
+      alert(`Erro ao solicitar leads: ${error?.message || 'Serviço indisponível'}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const clearLeads = async () => {
-    if (window.confirm("Deseja realmente limpar toda a base de leads no banco de dados?")) {
-      try {
-        await leadService.clearAllLeads();
-        setLeads([]);
-        setTotalLeadCount(0);
-      } catch (error) {
-        alert("Erro ao limpar base de dados.");
-      }
-    }
-  };
-
   if (!isAuthenticated) {
     return authView === 'login'
-      ? <Login onLogin={() => setIsAuthenticated(true)} onGoToRegister={() => setAuthView('register')} />
-      : <Register onRegister={() => {
-        setIsAuthenticated(true);
-        setAuthView('login');
-      }} onBackToLogin={() => setAuthView('login')} />;
+      ? <Login onLogin={() => { }} onGoToRegister={() => setAuthView('register')} />
+      : <Register onRegister={() => setAuthView('login')} onBackToLogin={() => setAuthView('login')} />;
   }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[var(--bg-main)] transition-colors duration-300">
-      {/* Mobile Header (Only visible on small screens) */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-[var(--bg-sidebar)] border-b border-[var(--border)] sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-12 h-10 flex items-center justify-center">
-            <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-125" />
-          </div>
-          <h1 className="font-bold text-lg tracking-tight leading-tight">
-            <span className="block text-[8px] text-[var(--primary)] font-black uppercase tracking-widest opacity-70">
-              {user?.user_metadata?.fullname || 'Vendedor Pro'}
-            </span>
-            LeadPro <span className="text-[var(--primary)] text-sm">B2B</span>
-          </h1>
-        </div>
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className={`p-2 rounded-xl transition-all ${isMobileMenuOpen
-            ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
-            : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
-            }`}
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </header>
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        userTheme={userTheme}
+        availableStates={availableStates}
+        selectedRequestUF={selectedRequestUF}
+        setSelectedRequestUF={setSelectedRequestUF}
+        handleRequestLeads={handleRequestLeads}
+        processQueue={processQueue}
+        isEnriching={isEnriching}
+        leads={leads}
+        isLoading={isLoading}
+        statusMessage={statusMessage}
+        handleLogout={handleLogout}
+      />
 
-      {/* Sidebar / Drawer */}
-      <aside className={`
-        fixed inset-0 z-40 md:relative md:z-auto transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        w-full md:w-72 bg-[var(--bg-sidebar)] border-r border-[var(--border)] flex flex-col h-screen
-      `}>
-        {/* Overlay for mobile when menu is open */}
-        {isMobileMenuOpen && (
-          <div
-            className="md:hidden absolute inset-0 bg-black/50 backdrop-blur-sm -z-10"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-        )}
-
-        <div className="p-6 border-b border-[var(--border)] hidden md:block">
-          <div className="flex items-center gap-2">
-            <div key={userTheme} className="w-14 h-14 flex items-center justify-center relative bg-white/10 rounded-2xl overflow-hidden border border-white/10">
-              {(THEMES as any)[userTheme]?.shield ? (
-                <>
-                  <img
-                    src={(THEMES as any)[userTheme].shield}
-                    alt="Team Shield"
-                    className="w-12 h-12 object-contain animate-in zoom-in-50 duration-500 z-10"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.opacity = '0';
-                      const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                      if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                    }}
-                  />
-                  <div
-                    className="absolute inset-0 hidden items-center justify-center font-black text-2xl text-[var(--primary)]"
-                    style={{ display: 'none' }}
-                  >
-                    {(THEMES as any)[userTheme].name.charAt(0)}
-                  </div>
-                </>
-              ) : (
-                <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
-              )}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-80 leading-none mb-1">
-                {user?.user_metadata?.fullname || 'Vendedor Pro'}
-              </span>
-              <h1 className="font-black text-xl tracking-tighter text-[var(--text-main)]">
-                LeadPro <span className="text-[var(--primary)]">B2B</span>
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4 pb-20 space-y-1 overflow-y-auto custom-scrollbar">
-          {NAVIGATION.filter(item => {
-            const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com';
-            // Vendedores veem Dashboard, CRM, Mural e Estratégia
-            if (!isAdmin) {
-              return item.id === 'dashboard' || item.id === 'crm' || item.id === 'mural' || item.id === 'strategy';
-            }
-            // Admin sees everything
-            return true;
-          }).map(item => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id as AppTab);
-                setIsMobileMenuOpen(false); // Close on click for mobile
-              }}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === item.id
-                ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
-                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
-                }`}
-            >
-              <span className={activeTab === item.id ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}>{item.icon}</span>
-              <span className={`text-sm ${activeTab === item.id ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>{item.name.toUpperCase()}</span>
-            </button>
-          ))}
-          {user?.email === 'paulofernandoautomacao@gmail.com' && (
-            <button
-              onClick={() => { setActiveTab(AppTab.ADMIN); setIsMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.ADMIN
-                ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
-                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
-                }`}
-            >
-              <span className={activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Shield size={20} /></span>
-              <span className={`text-sm ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>PAINEL DIRETOR</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => { setActiveTab(AppTab.REUNIAO); setIsMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.REUNIAO
-              ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
-              : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
-              }`}
-          >
-            <span className={activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Video size={20} /></span>
-            <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>ARENA DE CONFERÊNCIA</span>
-          </button>
-        </nav>
-        <div className="pt-6 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
-          <div className="flex flex-col gap-2">
-            {/* Status & Actions - Visible only on Mobile Drawer */}
-            <div className="md:hidden">
-              <div className="flex items-center justify-between px-2 mb-3">
-                <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Ações do Sistema</div>
-                <div className="flex items-center gap-1">
-                  <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
-                </div>
-              </div>
-
-              {user?.email === 'paulofernandoautomacao@gmail.com' && (
-                <div className="space-y-2 mb-4">
-                  <button
-                    onClick={() => exportLeadsToCSV(leads)}
-                    disabled={leads.length === 0}
-                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 py-2.5 px-4 rounded-xl text-xs font-bold"
-                  >
-                    <Download size={14} /> EXPORTAR CSV
-                  </button>
-                  <button
-                    onClick={processQueue}
-                    disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-bold"
-                  >
-                    {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    FILA MASTER
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Salesperson Specific Actions */}
-            {user?.email !== 'paulofernandoautomacao@gmail.com' && (
-              <div className="space-y-3 pt-1">
-                <div className="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-[var(--border)] shadow-sm space-y-2">
-                  <label htmlFor="uf-store-filter" className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1 cursor-pointer">
-                    <Globe size={12} className="text-[var(--primary)]" />
-                    Filtrar por UF
-                  </label>
-
-                  <select
-                    id="uf-store-filter"
-                    value={selectedRequestUF}
-                    onChange={(e) => setSelectedRequestUF(e.target.value)}
-                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg py-2 px-2.5 text-[11px] font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all cursor-pointer"
-                  >
-                    <option value="">Brasil (Tudo)</option>
-                    {availableStates.map(uf => (
-                      <option key={uf} value={uf}>{uf.toUpperCase()}</option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}
-                    disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] py-3 px-4 rounded-lg text-[10px] font-black hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
-                  >
-                    {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
-                    SOLICITAR LEADS
-                  </button>
-                </div>
-
-                <button
-                  onClick={processQueue}
-                  disabled={isEnriching || leads.filter(l => (l.status === 'pending' || (l.status === 'enriched' && !l.email))).length === 0}
-                  className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-[10px] font-black transition-all disabled:opacity-50 ${leads.some(l => l.status === 'pending' || (l.status === 'enriched' && !l.email))
-                    ? 'bg-amber-600 text-white hover:bg-amber-700 animate-pulse ring-4 ring-amber-500/10'
-                    : 'bg-slate-800 text-white hover:bg-black'
-                    }`}
-                >
-                  {isEnriching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                  ENRIQUECER LEADS
-                </button>
-              </div>
-            )}
-
-            {statusMessage && (
-              <div className="text-[10px] font-bold text-center text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-500/20 animate-pulse">
-                {statusMessage}
-              </div>
-            )}
-
-            <button
-              onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-              className="w-full mt-2 text-[10px] font-black text-[var(--text-main)] opacity-60 hover:opacity-100 hover:text-red-500 uppercase tracking-widest transition-all py-2"
-            >
-              Sair da Conta (Logout)
-            </button>
-
-            <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1 opacity-40">
-              <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Software Original</span>
-              <span className="text-[8px] font-bold text-[var(--text-muted)]">VERSÃO DE FÁBRICA</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-main)]">
-        {/* Global Top Bar (Harmonious Desk Layout) */}
-        <header className="hidden md:flex h-20 items-center justify-between px-10 bg-[var(--bg-sidebar)]/50 backdrop-blur-xl border-b border-[var(--border)] z-30">
-          <div className="flex items-center gap-6">
-            <h2 className="text-sm font-black text-[var(--text-main)] uppercase tracking-[4px]">
-              {(NAVIGATION.find(n => n.id === activeTab)?.name || (activeTab === AppTab.ADMIN ? 'Painel Diretor' : 'Arena de Conferência')).toUpperCase()}
-            </h2>
-            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-2xl border border-emerald-500/10">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Sistema Online</span>
-            </div>
-          </div>
+        <TopBar
+          activeTab={activeTab}
+          user={user}
+          leads={leads}
+          isEnriching={isEnriching}
+          processQueue={processQueue}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          setIsThemeSelectorOpen={setIsThemeSelectorOpen}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+        />
 
-          <div className="flex items-center gap-4">
-            {/* System Quick Actions for Admin in Top Bar */}
-            {user?.email === 'paulofernandoautomacao@gmail.com' && (
-              <div className="flex items-center gap-2 mr-4">
-                <button
-                  onClick={() => exportLeadsToCSV(leads)}
-                  disabled={leads.length === 0}
-                  className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-[var(--border)] px-4 py-2.5 rounded-xl text-[10px] font-black text-[var(--text-main)] hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm"
-                >
-                  <Download size={14} /> EXPORTAR CSV
-                </button>
-                <button
-                  onClick={processQueue}
-                  disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
-                  className="flex items-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] px-4 py-2.5 rounded-xl text-[10px] font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20"
-                >
-                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  FILA MASTER
-                </button>
-              </div>
-            )}
-
-            <div className="h-8 w-px bg-[var(--border)] mx-2"></div>
-
-            <div className="flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl border border-[var(--border)]">
-              <button
-                onClick={() => setIsThemeSelectorOpen(true)}
-                className="p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-[var(--text-main)] transition-all shadow-sm"
-                title="Personalizar Tema"
-              >
-                <Palette size={18} />
-              </button>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-[var(--text-main)] transition-all shadow-sm"
-              >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Scaled Content Container */}
-        <div className="flex-1 overflow-auto p-4 md:p-10 lg:p-12">
+        <div className="flex-1 overflow-auto p-responsive md:p-10 lg:p-12">
           <div className="max-w-[1600px] mx-auto">
             {activeTab === AppTab.DASHBOARD && (
               <Dashboard
@@ -630,14 +364,26 @@ Para solicitar um novo lote, você precisa para CADA lead:
                 totalLeadCount={totalLeadCount}
                 profiles={profiles}
                 userEmail={user?.email}
+                loading={isLoading}
+                externalStateData={dashboardData.stateStats}
+                externalSalespersonData={dashboardData.salespersonStats}
+                isAdmin={isAdmin}
+                globalStats={leadStats}
               />
             )}
-            {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
+            {activeTab === AppTab.LEADS && (
+              <LeadList
+                leads={leads}
+                loading={isLoading}
+                hasMore={hasMore}
+                onLoadMore={loadMoreLeads}
+              />
+            )}
             {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
             {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
             {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
             {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
-            {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
+            {activeTab === AppTab.ADMIN && isAdmin && (
               <AdminDashboard adminEmail={user.email} adminId={user.id} />
             )}
             {activeTab === AppTab.REUNIAO && (
@@ -646,7 +392,9 @@ Para solicitar um novo lote, você precisa para CADA lead:
           </div>
         </div>
       </main>
+
       <TeamChat currentUser={user} profiles={profiles} />
+
       {isThemeSelectorOpen && user && (
         <ThemeSelector
           userId={user.id}

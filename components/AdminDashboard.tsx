@@ -22,49 +22,65 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeView, setActiveView] = useState<'overview' | 'audit'>('overview');
     const [auditSearch, setAuditSearch] = useState('');
+    const [auditPage, setAuditPage] = useState(0);
+    const [hasMoreAudit, setHasMoreAudit] = useState(true);
+    const PAGE_SIZE = 50;
 
     useEffect(() => {
-        const loadAdminData = async () => {
-            setIsLoading(true);
-            try {
-                const [leadsData, profilesData, globalStats] = await Promise.all([
-                    leadService.getAdminLeads(),
-                    leadService.getAllProfiles(),
-                    leadService.getStats()
-                ]);
-
-                // Ghost user detection
-                const userCounts = new Set<string>();
-                leadsData.forEach(l => { if (l.userId) userCounts.add(l.userId); });
-                const existingProfileIds = new Set(profilesData.map(p => p.id));
-                const mergedProfiles = [...profilesData];
-                userCounts.forEach(uid => {
-                    if (!existingProfileIds.has(uid)) {
-                        mergedProfiles.push({
-                            id: uid,
-                            email: 'vendedor.novo@mci.br',
-                            fullname: `Vendedor (ID: ${uid.substring(0, 8)}...)`,
-                            role: 'vendedor',
-                            online_status: false
-                        });
-                    }
-                });
-
-                setAllLeads(leadsData);
-                setProfiles(mergedProfiles);
-                setStats(globalStats);
-                setIsLoading(false);
-            } catch (error) {
-                console.error("Erro ao carregar dados admin:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         loadAdminData();
-
         const interval = setInterval(loadAdminData, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    const loadAdminData = async () => {
+        setIsLoading(true);
+        try {
+            const [leadsData, profilesData, globalStats] = await Promise.all([
+                leadService.getAdminLeads(0, PAGE_SIZE),
+                leadService.getAllProfiles(),
+                leadService.getStats()
+            ]);
+
+            // Ghost user detection
+            const userCounts = new Set<string>();
+            leadsData.forEach(l => { if (l.userId) userCounts.add(l.userId); });
+            const existingProfileIds = new Set(profilesData.map(p => p.id));
+            const mergedProfiles = [...profilesData];
+            userCounts.forEach(uid => {
+                if (!existingProfileIds.has(uid)) {
+                    mergedProfiles.push({
+                        id: uid,
+                        email: 'vendedor.novo@mci.br',
+                        fullname: `Vendedor (ID: ${uid.substring(0, 8)}...)`,
+                        role: 'vendedor',
+                        online_status: false
+                    });
+                }
+            });
+
+            setAllLeads(leadsData);
+            setProfiles(mergedProfiles);
+            setStats(globalStats);
+            setAuditPage(0);
+            setHasMoreAudit(leadsData.length === PAGE_SIZE);
+        } catch (error) {
+            console.error("Erro ao carregar dados admin:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadMoreAudit = async () => {
+        const nextPage = auditPage + 1;
+        try {
+            const moreLeads = await leadService.getAdminLeads(nextPage, PAGE_SIZE);
+            setAllLeads(prev => [...prev, ...moreLeads]);
+            setAuditPage(nextPage);
+            setHasMoreAudit(moreLeads.length === PAGE_SIZE);
+        } catch (error) {
+            console.error("Erro ao carregar mais leads:", error);
+        }
+    };
 
     const sellerMetrics = useMemo(() => {
         return profiles.map(profile => {
@@ -145,15 +161,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
 
             {activeView === 'overview' ? (
                 <>
-                    {/* KPIs Principais */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
                         {[
                             { label: 'Total de Leads', value: stats.total, icon: <Activity />, color: 'blue' },
                             { label: 'Conversão Global', value: `${Math.round((allLeads.filter(l => l.stage === 'closed_won').length / Math.max(1, allLeads.filter(l => l.userId).length)) * 100)}%`, icon: <TrendingUp />, color: 'emerald' },
                             { label: 'Aguardando Distribuição', value: allLeads.filter(l => !l.userId).length, icon: <Clock />, color: 'amber' },
                             { label: 'Leads em Negociação', value: allLeads.filter(l => l.stage === 'negotiation').length, icon: <Target />, color: 'purple' },
                         ].map((kpi, i) => (
-                            <div key={i} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                            <div key={i} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all group hover-scale">
                                 <div className={`w-12 h-12 rounded-2xl bg-${kpi.color}-50 text-${kpi.color}-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                                     {kpi.icon}
                                 </div>
@@ -164,7 +179,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                     </div>
 
                     {/* Ranking & AI Insights */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
                         <div className="lg:col-span-2 bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -352,7 +367,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                             <tbody className="divide-y divide-slate-50">
                                 {allLeads
                                     .filter(l => l.userId && (l.razaoSocial.toLowerCase().includes(auditSearch.toLowerCase()) || profiles.find(p => p.id === l.userId)?.fullname?.toLowerCase().includes(auditSearch.toLowerCase())))
-                                    .slice(0, 50).map(lead => (
+                                    .map(lead => (
                                         <tr key={lead.id} className="hover:bg-slate-50/50 transition-all group">
                                             <td className="px-8 py-5">
                                                 <div className="font-bold text-slate-800 text-sm">{lead.razaoSocial}</div>
@@ -383,6 +398,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                     ))}
                             </tbody>
                         </table>
+
+                        {hasMoreAudit && (
+                            <div className="p-8 border-t border-slate-50 flex justify-center">
+                                <button
+                                    onClick={loadMoreAudit}
+                                    className="px-8 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover-scale border border-slate-100"
+                                >
+                                    Carregar mais auditorias
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

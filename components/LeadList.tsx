@@ -1,15 +1,48 @@
 
+
 import React, { useState } from 'react';
 import { Lead } from '../types';
 import { Search, Filter, Download, Mail, Phone, MapPin, Instagram, Globe, Facebook } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
+import Skeleton from './Skeleton';
+
 
 interface LeadListProps {
   leads: Lead[];
+  loading?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
 }
 
-const LeadList: React.FC<LeadListProps> = ({ leads }) => {
+const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore }) => {
   const [searchTerm, setSearchTerm] = useState('');
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton width={300} height={32} />
+            <Skeleton width={400} height={16} />
+          </div>
+          <Skeleton width={180} height={48} />
+        </header>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50/30">
+            <Skeleton height={40} />
+          </div>
+          <div className="p-6 space-y-4">
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const filteredLeads = leads.filter(l =>
     l.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,65 +140,92 @@ const LeadList: React.FC<LeadListProps> = ({ leads }) => {
           </table>
         </div>
 
-        {/* Mobile View: Cards */}
-        <div className="md:hidden divide-y divide-slate-100">
+        <div className="md:hidden">
           {filteredLeads.length === 0 ? (
             <div className="p-12 text-center text-slate-400 italic">Nenhum lead encontrado.</div>
           ) : (
-            filteredLeads.map(lead => (
-              <div key={lead.id} className="p-5 space-y-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="min-w-0">
-                    <h3 className="font-black text-slate-800 text-sm truncate">{lead.razaoSocial}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{lead.cnpj}</p>
+            <div className="grid grid-cols-1 gap-4 p-4">
+              {filteredLeads.map(lead => (
+                <div key={lead.id} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-5 hover-scale active:bg-slate-50 transition-all">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${lead.status === 'enriched' ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                        <h3 className="font-black text-slate-800 text-base truncate leading-tight uppercase tracking-tight">{lead.razaoSocial}</h3>
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] ml-4">{lead.cnpj}</p>
+                    </div>
+                    <span className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${lead.status === 'enriched' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                      {lead.status}
+                    </span>
                   </div>
-                  <span className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${lead.status === 'enriched' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {lead.status}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Mail size={14} className="text-blue-500 opacity-70" />
-                    <span className="truncate">{lead.email || '---'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Phone size={14} className="text-emerald-500 opacity-70" />
-                    <span>{lead.telefone || '---'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 col-span-2">
-                    <MapPin size={14} className="text-slate-400 opacity-70" />
-                    <span>{lead.municipio || '---'}, {lead.uf || '--'}</span>
-                  </div>
-                </div>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center gap-3 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-2xl border border-slate-100/50">
+                      <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                        <Mail size={14} className="text-blue-500" />
+                      </div>
+                      <span className="font-bold truncate">{lead.email || '---'}</span>
+                    </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${lead.situacaoCadastral?.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-500'}`}>
-                    {lead.situacaoCadastral || 'ATIVA'}
-                  </span>
-                  <div className="flex gap-2">
-                    <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`}
-                      target="_blank"
-                      className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 active:bg-blue-100 active:text-blue-600 transition-all"
-                    >
-                      <Search size={18} />
-                    </a>
-                    {lead.website && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-3 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-2xl border border-slate-100/50">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                          <Phone size={14} className="text-emerald-500" />
+                        </div>
+                        <span className="font-bold">{lead.telefone || '---'}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-2xl border border-slate-100/50">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                          <MapPin size={14} className="text-slate-400" />
+                        </div>
+                        <span className="font-bold">{lead.uf || '--'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100/80">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Situação Tributária</span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${lead.situacaoCadastral?.includes('BAIXADA') ? 'text-red-500' : 'text-emerald-600'}`}>
+                        {lead.situacaoCadastral || 'ATIVA'}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
                       <a
-                        href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                        href={`https://www.google.com/search?q=${encodeURIComponent(lead.razaoSocial)}`}
                         target="_blank"
-                        className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600"
+                        className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:bg-blue-600 active:text-white transition-all shadow-sm"
                       >
-                        <Globe size={18} />
+                        <Search size={18} />
                       </a>
-                    )}
+                      {lead.website && (
+                        <a
+                          href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                          target="_blank"
+                          className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg shadow-[var(--primary)]/20"
+                        >
+                          <Globe size={18} />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
+
+        {hasMore && (
+          <div className="p-8 border-t border-slate-100 flex justify-center">
+            <button
+              onClick={onLoadMore}
+              className="px-8 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover-scale border border-slate-200"
+            >
+              Carregar mais leads
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
