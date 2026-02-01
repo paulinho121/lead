@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, X, User, Clock, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, X, User, Clock, CheckCheck, ChevronLeft } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { leadService } from '../services/dbService';
 import { Message, Profile } from '../types';
@@ -16,7 +16,17 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+    const [totalUnread, setTotalUnread] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const notificationSound = useRef<HTMLAudioElement | null>(null);
+
+    // Initialize notification sound
+    useEffect(() => {
+        // High quality "Success/Pop" sound
+        notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+        notificationSound.current.volume = 0.5;
+    }, []);
 
     // Filter out current user from chat list
     const chatUsers = profiles.filter(p => p.id !== currentUser.id);
@@ -25,28 +35,70 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
     const isAdmin = currentUser.email === 'paulofernandoautomacao@gmail.com';
 
     useEffect(() => {
+        // Subscribe to real-time messages for ALL users to catch notifications
+        const channel = supabase
+            .channel(`notifications_${currentUser.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `receiver_id=eq.${currentUser.id}`
+            }, (payload) => {
+                const msg = payload.new as Message;
+
+                // If the message is not from the currently selected user (or chat is closed)
+                if (!isOpen || !selectedUser || msg.sender_id !== selectedUser.id) {
+                    setUnreadMessages(prev => ({
+                        ...prev,
+                        [msg.sender_id]: (prev[msg.sender_id] || 0) + 1
+                    }));
+                    setTotalUnread(prev => prev + 1);
+
+                    // Play notification sound
+                    notificationSound.current?.play().catch(() => { });
+
+                    // Browser notification
+                    if (Notification.permission === 'granted') {
+                        new Notification('Nova Mensagem', {
+                            body: msg.content,
+                            icon: '/logo.png'
+                        });
+                    }
+                } else if (isOpen && selectedUser && msg.sender_id === selectedUser.id) {
+                    // If chat is open and it's the right person, add to messages list
+                    setMessages(prev => [...prev, msg]);
+                }
+            })
+            .subscribe();
+
+        // Request notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Load initial unread counts
+        loadUnreadCounts();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selectedUser, isOpen]);
+
+    const loadUnreadCounts = async () => {
+        try {
+            // This is a simplified fetch - normally you'd have a specific query for counts
+            const data = await leadService.getMessages(currentUser.id, ''); // Modified to fetch all to see unread
+            // Note: In a production app, use a specific unread count API
+            const counts: Record<string, number> = {};
+            // For now, we'll initialize counts as 0 or use the real-time logic
+        } catch (e) {
+            console.error('Error loading unread counts:', e);
+        }
+    };
+
+    useEffect(() => {
         if (selectedUser && isOpen) {
             loadMessages();
-
-            // Subscribe to real-time messages
-            const channel = supabase
-                .channel(`chat_${currentUser.id}_${selectedUser.id}`)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `receiver_id=eq.${currentUser.id}`
-                }, (payload) => {
-                    const msg = payload.new as Message;
-                    if (msg.sender_id === selectedUser.id) {
-                        setMessages(prev => [...prev, msg]);
-                    }
-                })
-                .subscribe();
-
-            return () => {
-                supabase.removeChannel(channel);
-            };
         }
     }, [selectedUser, isOpen]);
 
@@ -62,6 +114,18 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
         const data = await leadService.getMessages(currentUser.id, selectedUser.id);
         setMessages(data);
         setIsLoading(false);
+
+        // Clear unread for this user
+        if (unreadMessages[selectedUser.id]) {
+            const count = unreadMessages[selectedUser.id];
+            setUnreadMessages(prev => {
+                const next = { ...prev };
+                delete next[selectedUser.id];
+                return next;
+            });
+            setTotalUnread(prev => Math.max(0, prev - count));
+            // In a real app, you would call dbService.markAsRead(currentUser.id, selectedUser.id)
+        }
     };
 
     const handleSend = async (e: React.FormEvent) => {
@@ -91,10 +155,14 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="w-16 h-16 bg-[var(--primary)] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all group"
+                    className="w-16 h-16 bg-[var(--primary)] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all group relative"
                 >
                     <MessageCircle size={28} className="group-hover:rotate-12 transition-transform" />
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-4 border-white animate-pulse"></span>
+                    {totalUnread > 0 && (
+                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full border-4 border-white flex items-center justify-center animate-bounce shadow-lg">
+                            {totalUnread}
+                        </span>
+                    )}
                 </button>
             )}
 
@@ -105,8 +173,8 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                     <header className="p-6 bg-[var(--primary)] text-white flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             {selectedUser ? (
-                                <button onClick={() => setSelectedUser(null)} className="p-1 hover:bg-white/10 rounded-lg">
-                                    <X size={20} className="rotate-45" />
+                                <button onClick={() => setSelectedUser(null)} className="p-2 -ml-2 hover:bg-white/10 rounded-xl transition-colors flex items-center gap-1 group">
+                                    <ChevronLeft size={24} className="group-hover:-translate-x-0.5 transition-transform" />
                                 </button>
                             ) : (
                                 <MessageCircle size={24} />
@@ -149,7 +217,14 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                                             <div className="text-[10px] text-slate-400 font-medium">{user.role || 'Vendedor'}</div>
                                         </div>
                                     </div>
-                                    <Clock size={14} className="text-slate-200 group-hover:text-slate-400" />
+                                    <div className="flex flex-col items-end gap-1">
+                                        <Clock size={14} className="text-slate-200 group-hover:text-slate-400" />
+                                        {unreadMessages[user.id] > 0 && (
+                                            <span className="bg-[var(--primary)] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                                {unreadMessages[user.id]}
+                                            </span>
+                                        )}
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -174,8 +249,8 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                                         return (
                                             <div key={msg.id || i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                                                 <div className={`max-w-[80%] p-4 rounded-[20px] text-sm shadow-sm ${isMine
-                                                        ? 'bg-[var(--primary)] text-white rounded-tr-none'
-                                                        : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                                                    ? 'bg-[var(--primary)] text-white rounded-tr-none'
+                                                    : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                                                     }`}>
                                                     {msg.content}
                                                     <div className={`text-[9px] mt-1 flex items-center justify-end gap-1 ${isMine ? 'text-white/70' : 'text-slate-400'}`}>
