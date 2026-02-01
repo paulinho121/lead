@@ -193,7 +193,9 @@ export const leadService = {
             instagram: lead.instagram,
             user_id: lead.userId,
             niche: lead.niche,
-            website: lead.website
+            website: lead.website,
+            facebook: lead.facebook,
+            email_not_found: lead.emailNotFound
         };
     },
 
@@ -219,7 +221,9 @@ export const leadService = {
             instagram: dbLead.instagram,
             userId: dbLead.user_id,
             niche: dbLead.niche,
-            website: dbLead.website
+            website: dbLead.website,
+            facebook: dbLead.facebook,
+            emailNotFound: dbLead.email_not_found
         };
     }
 };

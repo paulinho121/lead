@@ -17,6 +17,7 @@ import { Analytics } from "@vercel/analytics/react"
 import Login from './components/Login';
 import Register from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
+import { isLeadFullyManaged } from './hooks/useLeadManagement';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
@@ -46,6 +47,7 @@ const App: React.FC = () => {
 
   const [totalLeadCount, setTotalLeadCount] = useState(0);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
 
   useEffect(() => {
     supabase?.auth.getSession().then(({ data: { session } }) => {
@@ -56,6 +58,7 @@ const App: React.FC = () => {
         loadLeads(session.user);
         loadStats();
         loadAvailableStates();
+        loadProfiles();
       }
     });
 
@@ -67,12 +70,25 @@ const App: React.FC = () => {
         loadLeads(session.user);
         loadStats();
         loadAvailableStates();
+        loadProfiles();
       }
-      else setLeads([]);
+      else {
+        setLeads([]);
+        setProfiles([]);
+      }
     }) || { data: { subscription: null } };
 
     return () => subscription?.unsubscribe();
   }, []);
+
+  const loadProfiles = async () => {
+    try {
+      const data = await leadService.getAllProfiles();
+      setProfiles(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const loadAvailableStates = async () => {
     try {
@@ -164,12 +180,20 @@ const App: React.FC = () => {
   const updateLead = async (updatedLead: Lead) => {
     if (!user) return;
     try {
+      // 1. Optimistic UI update
+      setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+
+      // 2. Database update
       const leadWithUser = { ...updatedLead, userId: user.id };
       await leadService.upsertLeads([leadWithUser]);
-      setLeads(prev => prev.map(l => l.id === updatedLead.id ? leadWithUser : l));
-      loadStats(); // Silencioso
+
+      // 3. Stats update (silent)
+      loadStats();
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
+      // Reload leads from server if update fails
+      loadLeads();
+      alert("Houve um erro ao sincronizar o lead com o servidor. A página foi atualizada.");
     }
   };
 
@@ -179,11 +203,16 @@ const App: React.FC = () => {
 
   const handleRequestLeads = async (uf?: string) => {
     if (!user) return;
-    const remaining = leads.filter(l => l.status === 'enriched' && !l.contacted).length;
-    if (remaining > 0) {
-      alert(`⚠️ Bloqueio de Segurança: Você possui ${remaining} leads prontos no seu CRM que ainda não foram contactados. 
+    const unmanagedLeads = leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l));
 
-Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o contato ou resposta de todos os leads atuais.`);
+    if (unmanagedLeads.length > 0) {
+      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos. 
+
+Para solicitar um novo lote, você precisa para CADA lead:
+1. Adicionar o Instagram
+2. Adicionar o Facebook
+3. Adicionar o E-mail (ou marcar 'E-mail não encontrado')
+4. Marcar como Contatado/Finalizado`);
       return;
     }
 
@@ -403,7 +432,7 @@ Para solicitar um novo lote de 20 leads, você precisa primeiro registrar o cont
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-[var(--bg-main)]">
         <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} />}
+          {activeTab === AppTab.DASHBOARD && <Dashboard leads={leads} totalLeadCount={totalLeadCount} profiles={profiles} />}
           {activeTab === AppTab.LEADS && <LeadList leads={leads} />}
           {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}

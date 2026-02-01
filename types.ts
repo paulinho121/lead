@@ -23,6 +23,7 @@ export interface Lead {
   observations?: string;
   niche?: string;
   facebook?: string;
+  emailNotFound?: boolean;
 }
 
 export interface EnrichmentData {
