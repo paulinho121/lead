@@ -51,6 +51,11 @@ const App: React.FC = () => {
     document.documentElement.style.setProperty('--primary', activeTheme.primary);
     document.documentElement.style.setProperty('--primary-hover', activeTheme.hover);
     document.documentElement.style.setProperty('--accent', activeTheme.primary);
+
+    // Only 'brasil' (Yellow) needs dark text. All other teams (Black, Red, Green, etc) need white text.
+    const textOnPrimary = activeTheme.id === 'brasil' ? '#0f172a' : '#ffffff';
+    document.documentElement.style.setProperty('--text-on-primary', textOnPrimary);
+
     localStorage.setItem('user-manto-theme', userTheme);
   }, [userTheme]);
 
@@ -400,12 +405,14 @@ Para solicitar um novo lote, você precisa para CADA lead:
                 <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
               )}
             </div>
-            <h1 className="font-bold text-xl tracking-tight text-[var(--text-main)] leading-tight">
-              <span className="block text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-70 mb-0.5">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-80 leading-none mb-1">
                 {user?.user_metadata?.fullname || 'Vendedor Pro'}
               </span>
-              LeadPro <span className="text-[var(--primary)] text-sm">B2B</span>
-            </h1>
+              <h1 className="font-black text-xl tracking-tighter text-[var(--text-main)] flex items-center gap-1.5">
+                LeadPro <span className="px-1.5 py-0.5 bg-[var(--primary)] text-[var(--text-on-primary)] rounded-md text-[10px] font-black">B2B</span>
+              </h1>
+            </div>
           </div>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-[2px]">{(THEMES as any)[userTheme]?.name || 'Inteligência de Vendas'}</p>
@@ -444,36 +451,40 @@ Para solicitar um novo lote, você precisa para CADA lead:
                 setActiveTab(item.id as AppTab);
                 setIsMobileMenuOpen(false); // Close on click for mobile
               }}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === item.id
-                ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20'
-                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === item.id
+                ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                 }`}
             >
-              <span className={activeTab === item.id ? 'text-white scale-110' : 'text-[var(--text-muted)]'}>{item.icon}</span>
-              <span className={`text-sm ${activeTab === item.id ? 'text-white' : 'font-medium'}`}>{item.name}</span>
+              <span className={activeTab === item.id ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}>{item.icon}</span>
+              <span className={`text-sm ${activeTab === item.id ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>{item.name.toUpperCase()}</span>
             </button>
           ))}
           {user?.email === 'paulofernandoautomacao@gmail.com' && (
             <button
               onClick={() => { setActiveTab(AppTab.ADMIN); setIsMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === AppTab.ADMIN ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20' : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.ADMIN
+                ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                 }`}
             >
-              <span className={activeTab === AppTab.ADMIN ? 'text-white scale-110' : 'text-[var(--text-muted)]'}><Shield size={20} /></span>
-              <span className={`text-sm ${activeTab === AppTab.ADMIN ? 'text-white' : 'font-medium'}`}>Painel Diretor</span>
+              <span className={activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Shield size={20} /></span>
+              <span className={`text-sm ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>PAINEL DIRETOR</span>
             </button>
           )}
 
           <button
             onClick={() => { setActiveTab(AppTab.REUNIAO); setIsMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === AppTab.REUNIAO ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20' : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+            className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.REUNIAO
+              ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+              : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
               }`}
           >
-            <span className={activeTab === AppTab.REUNIAO ? 'text-white scale-110' : 'text-[var(--text-muted)]'}><Video size={20} /></span>
-            <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-white' : 'font-medium'}`}>Arena de Conferência</span>
+            <span className={activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Video size={20} /></span>
+            <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>ARENA DE CONFERÊNCIA</span>
           </button>
         </nav>
-        <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
+        <div className="pt-10 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-2 mb-1">
               <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest">Ações do Sistema</div>
