@@ -17,7 +17,7 @@ export const THEMES = {
         name: 'Botafogo (Alvinegro)',
         primary: '#000000',
         hover: '#333333',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/5/52/Botafogo_de_Futebol_e_Regatas_logo.svg&w=200',
+        shield: '/botafogo-shield.png',
         icon: <Trophy size={20} />
     },
     flamengo: {
@@ -25,7 +25,7 @@ export const THEMES = {
         name: 'Flamengo (Mengão)',
         primary: '#C1272D',
         hover: '#a01f25',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/2/2e/Flamengo_brazilian_v_logo.svg&w=200',
+        shield: '/flamengo-shield.png',
         icon: <Trophy size={20} />
     },
     lakers: {
@@ -33,23 +33,23 @@ export const THEMES = {
         name: 'Lakers (NBA)',
         primary: '#552583',
         hover: '#441d6a',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/3/3c/Los_Angeles_Lakers_logo.svg&w=200',
+        shield: '/lakers-shield.png',
         icon: <Dribbble size={20} />
     },
-    surf: {
-        id: 'surf',
-        name: 'Pro Surfer (Hawaii)',
-        primary: '#00A3E0',
-        hover: '#0085b8',
-        shield: 'https://images.weserv.nl/?url=https://www.svgrepo.com/show/532326/surf.svg&w=200',
-        icon: <Waves size={20} />
+    brasil: {
+        id: 'brasil',
+        name: 'Seleção Brasileira',
+        primary: '#F7D116',
+        hover: '#d4b200',
+        shield: '/brasil-shield.png',
+        icon: <Trophy size={20} />
     },
     palmeiras: {
         id: 'palmeiras',
         name: 'Palmeiras (Verdão)',
         primary: '#006437',
         hover: '#004c2a',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/1/10/Palmeiras_logo.svg&w=200',
+        shield: '/palmeiras-shield.png',
         icon: <Trophy size={20} />
     },
     corinthians: {
@@ -57,7 +57,7 @@ export const THEMES = {
         name: 'Corinthians (Timão)',
         primary: '#000000',
         hover: '#222222',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/1/10/Sport_Club_Corinthians_Paulista_logo.svg&w=200',
+        shield: '/corinthians-shield.png',
         icon: <Trophy size={20} />
     },
     vasco: {
@@ -65,7 +65,7 @@ export const THEMES = {
         name: 'Vasco da Gama',
         primary: '#000000',
         hover: '#1a1a1a',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/a/ac/Club_de_Regatas_Vasco_da_Gama_logo.svg&w=200',
+        shield: '/vasco-shield.png',
         icon: <Anchor size={20} />
     },
     bulls: {
@@ -73,7 +73,7 @@ export const THEMES = {
         name: 'Chicago Bulls (NBA)',
         primary: '#CE1141',
         hover: '#a00d32',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/6/67/Chicago_Bulls_logo.svg&w=200',
+        shield: '/bulls-shield.png',
         icon: <Dribbble size={20} />
     },
     ceara: {
@@ -81,7 +81,7 @@ export const THEMES = {
         name: 'Ceará SC (Vozão)',
         primary: '#000000',
         hover: '#222222',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/2/23/Escudo_Ceara_SC.png&w=200',
+        shield: '/ceara-shield.png',
         icon: <Trophy size={20} />
     },
     fortaleza: {
@@ -89,7 +89,7 @@ export const THEMES = {
         name: 'Fortaleza (Leão)',
         primary: '#004daa',
         hover: '#003a80',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/4/41/Fortaleza_Esporte_Clube_Logo.png&w=200',
+        shield: '/fortaleza-shield.png',
         icon: <Trophy size={20} />
     },
     santos: {
@@ -97,7 +97,7 @@ export const THEMES = {
         name: 'Santos FC (Peixe)',
         primary: '#111111',
         hover: '#333333',
-        shield: 'https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/3/35/Santos_logo.svg&w=200',
+        shield: '/santos-shield.png',
         icon: <Anchor size={20} />
     }
 };
@@ -147,7 +147,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ userId, currentTheme, onC
                     </button>
                 </header>
 
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="p-4 md:p-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     {Object.values(THEMES).map(theme => (
                         <button
                             key={theme.id}
@@ -156,24 +156,24 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ userId, currentTheme, onC
                                 document.documentElement.style.setProperty('--primary', theme.primary);
                                 document.documentElement.style.setProperty('--primary-hover', theme.hover);
                             }}
-                            className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group ${previewTheme === theme.id
-                                    ? 'border-[var(--primary)] bg-slate-50 scale-105 shadow-xl'
-                                    : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                            className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border-2 transition-all flex flex-col items-center gap-3 md:gap-4 group ${previewTheme === theme.id
+                                ? 'border-[var(--primary)] bg-slate-50 scale-105 shadow-xl'
+                                : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
                                 }`}
                         >
                             <div
-                                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 overflow-hidden"
+                                className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 overflow-hidden"
                                 style={{ backgroundColor: theme.primary, color: 'white' }}
                             >
                                 {theme.shield ? (
                                     <img
                                         src={theme.shield}
                                         alt={theme.name}
-                                        className="w-10 h-10 object-contain"
+                                        className="w-8 h-8 md:w-10 md:h-10 object-contain"
                                         onError={(e) => {
                                             (e.target as any).style.display = 'none';
                                             const parent = (e.target as any).parentElement;
-                                            if (parent) parent.innerHTML = `<div class="text-white font-black text-xl">${theme.name.charAt(0)}</div>`;
+                                            if (parent) parent.innerHTML = `<div class="text-white font-black text-lg md:text-xl">${theme.name.charAt(0)}</div>`;
                                         }}
                                     />
                                 ) : (
@@ -181,18 +181,18 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ userId, currentTheme, onC
                                 )}
                             </div>
                             <div className="text-center">
-                                <span className="text-sm font-black text-slate-800 block">{theme.name}</span>
-                                <div className="flex items-center justify-center gap-1 mt-2">
-                                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }} />
-                                    <div className="w-2 h-2 rounded-full bg-slate-200" />
+                                <span className="text-[10px] md:text-sm font-black text-slate-800 block leading-tight">{theme.name}</span>
+                                <div className="flex items-center justify-center gap-1 mt-1 md:mt-2">
+                                    <div className="w-3 h-3 md:w-4 md:h-4 rounded-full" style={{ backgroundColor: theme.primary }} />
+                                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-slate-200" />
                                 </div>
                             </div>
                         </button>
                     ))}
                 </div>
 
-                <footer className="p-8 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-3">
+                <footer className="p-4 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6">
+                    <div className="hidden sm:flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-[var(--primary)]">
                             <ShieldAlert size={20} />
                         </div>
@@ -202,21 +202,21 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ userId, currentTheme, onC
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="flex-1 md:flex-none px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="flex-1 sm:flex-none px-6 md:px-10 py-3 md:py-4 bg-[var(--primary)] text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isSaving ? (
                                 <>
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                     SALVANDO...
                                 </>
                             ) : (
                                 <>
                                     <CheckCircle2 size={16} />
-                                    SALVAR E USAR MANTO
+                                    SALVAR E USAR
                                 </>
                             )}
                         </button>

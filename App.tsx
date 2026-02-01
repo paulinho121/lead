@@ -9,7 +9,7 @@ import Enricher from './components/Enricher';
 import Strategy from './components/Strategy';
 import CRM from './components/CRM';
 import { exportLeadsToCSV } from './services/exportService';
-import { Download, RefreshCw, Sparkles, Loader2, Users, Globe, Palette, Sun, Moon, Menu, X } from 'lucide-react';
+import { Download, RefreshCw, Sparkles, Loader2, Users, Globe, Palette, Sun, Moon, Menu, X, Shield, Video } from 'lucide-react';
 import { leadService } from './services/dbService';
 import { backgroundEnricher } from './services/backgroundEnricher';
 import { Analytics } from "@vercel/analytics/react"
@@ -20,6 +20,7 @@ import { isLeadFullyManaged } from './hooks/useLeadManagement';
 import Mural from './components/Mural.tsx';
 import TeamChat from './components/TeamChat';
 import ThemeSelector, { THEMES } from './components/ThemeSelector';
+import MeetingRoom from './components/MeetingRoom';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
@@ -341,7 +342,12 @@ Para solicitar um novo lote, você precisa para CADA lead:
           <div className="w-12 h-10 flex items-center justify-center">
             <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-125" />
           </div>
-          <h1 className="font-bold text-lg tracking-tight">LeadPro <span className="text-[var(--primary)]">B2B</span></h1>
+          <h1 className="font-bold text-lg tracking-tight leading-tight">
+            <span className="block text-[8px] text-[var(--primary)] font-black uppercase tracking-widest opacity-70">
+              {user?.user_metadata?.fullname || 'Vendedor Pro'}
+            </span>
+            LeadPro <span className="text-[var(--primary)] text-sm">B2B</span>
+          </h1>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -394,10 +400,15 @@ Para solicitar um novo lote, você precisa para CADA lead:
                 <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
               )}
             </div>
-            <h1 className="font-bold text-xl tracking-tight text-[var(--text-main)]">LeadPro <span className="text-[var(--primary)]">B2B</span></h1>
+            <h1 className="font-bold text-xl tracking-tight text-[var(--text-main)] leading-tight">
+              <span className="block text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-70 mb-0.5">
+                {user?.user_metadata?.fullname || 'Vendedor Pro'}
+              </span>
+              LeadPro <span className="text-[var(--primary)] text-sm">B2B</span>
+            </h1>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{(THEMES as any)[userTheme]?.name || 'Inteligência de Vendas'}</p>
+            <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-[2px]">{(THEMES as any)[userTheme]?.name || 'Inteligência de Vendas'}</p>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setIsThemeSelectorOpen(true)}
@@ -442,6 +453,25 @@ Para solicitar um novo lote, você precisa para CADA lead:
               <span className={`text-sm ${activeTab === item.id ? 'text-white' : 'font-medium'}`}>{item.name}</span>
             </button>
           ))}
+          {user?.email === 'paulofernandoautomacao@gmail.com' && (
+            <button
+              onClick={() => { setActiveTab(AppTab.ADMIN); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === AppTab.ADMIN ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20' : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                }`}
+            >
+              <span className={activeTab === AppTab.ADMIN ? 'text-white scale-110' : 'text-[var(--text-muted)]'}><Shield size={20} /></span>
+              <span className={`text-sm ${activeTab === AppTab.ADMIN ? 'text-white' : 'font-medium'}`}>Painel Diretor</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => { setActiveTab(AppTab.REUNIAO); setIsMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === AppTab.REUNIAO ? 'bg-[var(--primary)] text-white font-bold shadow-lg shadow-[var(--primary)]/20' : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+              }`}
+          >
+            <span className={activeTab === AppTab.REUNIAO ? 'text-white scale-110' : 'text-[var(--text-muted)]'}><Video size={20} /></span>
+            <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-white' : 'font-medium'}`}>Arena de Conferência</span>
+          </button>
         </nav>
         <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
           <div className="flex flex-col gap-2">
@@ -538,8 +568,8 @@ Para solicitar um novo lote, você precisa para CADA lead:
             </button>
 
             <div className="mt-4 pt-4 border-t border-[var(--border)] flex flex-col items-center gap-1 opacity-40">
-              <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Versão de Fábrica</span>
-              <span className="text-[8px] font-bold text-[var(--text-muted)]">v1.0.0-FABRICA</span>
+              <span className="text-[9px] font-black text-[var(--text-main)] uppercase tracking-[2px]">Software Original</span>
+              <span className="text-[8px] font-bold text-[var(--text-muted)]">VERSÃO DE FÁBRICA</span>
             </div>
           </div>
         </div>
@@ -564,6 +594,9 @@ Para solicitar um novo lote, você precisa para CADA lead:
           {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
           {activeTab === AppTab.ADMIN && user?.email === 'paulofernandoautomacao@gmail.com' && (
             <AdminDashboard adminEmail={user.email} adminId={user.id} />
+          )}
+          {activeTab === AppTab.REUNIAO && (
+            <MeetingRoom userEmail={user?.email || ''} userName={user?.user_metadata?.fullname || 'Vendedor'} />
           )}
         </div>
       </main>
