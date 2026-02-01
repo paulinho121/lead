@@ -108,15 +108,15 @@ const App: React.FC = () => {
   // Heartbeat for online status
   useEffect(() => {
     if (user) {
+      // Initial heartbeat
+      leadService.updateHeartbeat(user.id);
+
       const interval = setInterval(() => {
         leadService.updateHeartbeat(user.id);
       }, 30000); // Pulse every 30s
 
-      // Cleanup on visibility change or tab close
       const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-          leadService.setOffline(user.id);
-        } else {
+        if (document.visibilityState === 'visible') {
           leadService.updateHeartbeat(user.id);
         }
       };

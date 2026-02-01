@@ -31,9 +31,6 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
     // Filter out current user from chat list
     const chatUsers = profiles.filter(p => p.id !== currentUser.id);
 
-    // Admin is usually the one everyone wants to talk to
-    const isAdmin = currentUser.email === 'paulofernandoautomacao@gmail.com';
-
     useEffect(() => {
         // Subscribe to real-time messages for ALL users to catch notifications
         const channel = supabase
@@ -76,25 +73,10 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
             Notification.requestPermission();
         }
 
-        // Load initial unread counts
-        loadUnreadCounts();
-
         return () => {
             supabase.removeChannel(channel);
         };
     }, [selectedUser, isOpen]);
-
-    const loadUnreadCounts = async () => {
-        try {
-            // This is a simplified fetch - normally you'd have a specific query for counts
-            const data = await leadService.getMessages(currentUser.id, ''); // Modified to fetch all to see unread
-            // Note: In a production app, use a specific unread count API
-            const counts: Record<string, number> = {};
-            // For now, we'll initialize counts as 0 or use the real-time logic
-        } catch (e) {
-            console.error('Error loading unread counts:', e);
-        }
-    };
 
     useEffect(() => {
         if (selectedUser && isOpen) {
@@ -124,7 +106,6 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                 return next;
             });
             setTotalUnread(prev => Math.max(0, prev - count));
-            // In a real app, you would call dbService.markAsRead(currentUser.id, selectedUser.id)
         }
     };
 
@@ -218,7 +199,11 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <Clock size={14} className="text-slate-200 group-hover:text-slate-400" />
+                                        {user.online_status ? (
+                                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter animate-pulse">Online</span>
+                                        ) : (
+                                            <Clock size={14} className="text-slate-200 group-hover:text-slate-400" />
+                                        )}
                                         {unreadMessages[user.id] > 0 && (
                                             <span className="bg-[var(--primary)] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                                 {unreadMessages[user.id]}
