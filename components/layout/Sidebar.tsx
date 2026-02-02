@@ -117,32 +117,45 @@ const Sidebar: React.FC<SidebarProps> = ({
                             : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                             }`}
                     >
-                        <span className={activeTab === item.id ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}>{item.icon}</span>
-                        <span className={`text-sm ${activeTab === item.id ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>{item.name.toUpperCase()}</span>
+                        <span className={`shrink-0 ${activeTab === item.id ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}`}>
+                            {item.icon}
+                        </span>
+                        <span className={`text-[10px] sm:text-xs text-left flex-1 tracking-wider leading-tight ${activeTab === item.id ? 'text-[var(--text-on-primary)]' : 'font-black opacity-60 group-hover:opacity-100'}`}>
+                            {item.name.toUpperCase()}
+                        </span>
                     </button>
                 ))}
+
                 {isAdmin && (
                     <button
                         onClick={() => { setActiveTab(AppTab.ADMIN); setIsMobileMenuOpen(false); }}
                         className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.ADMIN
-                            ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+                            ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20 scale-[1.02]'
                             : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                             }`}
                     >
-                        <span className={activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Shield size={20} /></span>
-                        <span className={`text-sm ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>PAINEL DIRETOR</span>
+                        <span className={`shrink-0 ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}`}>
+                            <Shield size={20} />
+                        </span>
+                        <span className={`text-[10px] sm:text-xs text-left flex-1 tracking-wider leading-tight ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)]' : 'font-black opacity-60 group-hover:opacity-100'}`}>
+                            PAINEL DIRETOR
+                        </span>
                     </button>
                 )}
 
                 <button
                     onClick={() => { setActiveTab(AppTab.REUNIAO); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.REUNIAO
-                        ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+                        ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20 scale-[1.02]'
                         : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                         }`}
                 >
-                    <span className={activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}><Video size={20} /></span>
-                    <span className={`text-sm ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)]' : 'font-bold opacity-70 group-hover:opacity-100'}`}>ARENA DE CONFERÊNCIA</span>
+                    <span className={`shrink-0 ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}`}>
+                        <Video size={20} />
+                    </span>
+                    <span className={`text-[10px] sm:text-xs text-left flex-1 tracking-wider leading-tight ${activeTab === AppTab.REUNIAO ? 'text-[var(--text-on-primary)]' : 'font-black opacity-60 group-hover:opacity-100'}`}>
+                        ARENA DE CONFERÊNCIA
+                    </span>
                 </button>
             </nav>
             <div className="pt-6 pb-6 px-4 border-t border-[var(--border)] bg-[var(--bg-main)]">
