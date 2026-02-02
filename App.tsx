@@ -231,7 +231,10 @@ const App: React.FC = () => {
     try {
       await backgroundEnricher.processLeads(
         pendingLeads,
-        (updated) => updateLead(updated),
+        (updated) => {
+          updateLead(updated);
+          loadStats(); // Re-fetch stats to update counters in real-time
+        },
         (type, msg) => {
           console.log(`[Enricher] ${type}: ${msg}`);
           if (type === 'info' || type === 'success') {

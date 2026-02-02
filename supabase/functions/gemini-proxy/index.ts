@@ -8,6 +8,24 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+function safeJsonParse(text: string) {
+    try {
+        // Try direct parse first
+        return JSON.parse(text);
+    } catch {
+        // Try to extract JSON from markdown or text
+        const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonMatch) {
+            try {
+                return JSON.parse(jsonMatch[0]);
+            } catch {
+                throw new Error("Failed to parse extracted JSON: " + text.substring(0, 100));
+            }
+        }
+        throw new Error("No JSON found in AI response: " + text.substring(0, 100));
+    }
+}
+
 serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -15,15 +33,18 @@ serve(async (req) => {
     }
 
     try {
-        const { action, ...payload } = await req.json()
-        const apiKey = Deno.env.get('GEMINI_API_KEY')
+        const body = await req.json();
+        const { action, ...payload } = body;
+        const apiKey = Deno.env.get('GEMINI_API_KEY');
+
+        console.log(`[Proxy] Action: ${action}`);
 
         if (!apiKey) {
-            throw new Error('GEMINI_API_KEY not set in Edge Function secrets')
+            throw new Error('GEMINI_API_KEY not set in Edge Function secrets');
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         let result;
 
@@ -53,6 +74,7 @@ serve(async (req) => {
         )
 
     } catch (error) {
+        console.error(`[Proxy Error]`, error);
         return new Response(
             JSON.stringify({ error: error.message }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -63,22 +85,19 @@ serve(async (req) => {
 async function handleParseText(model: any, text: string) {
     const prompt = `Extraia informações de empresas brasileiras (especialmente CNPJ, Email e Telefone) do seguinte texto. Retorne APENAS um array JSON. Texto: ${text.substring(0, 30000)}`;
     const res = await model.generateContent(prompt);
-    const textResponse = res.response.text();
-    // Basic cleanup to ensure only JSON is returned if the model adds markdown
-    const jsonMatch = textResponse.match(/\[.*\]/s);
-    return JSON.parse(jsonMatch ? jsonMatch[0] : textResponse);
+    return safeJsonParse(res.response.text());
 }
 
 async function handleDiscoverEmail(model: any, razaoSocial: string, cnpj: string) {
     const prompt = `Com base na Razão Social: "${razaoSocial}" e CNPJ: "${cnpj}", sugira o email corporativo mais provável. Retorne JSON: {"email": "..."}`;
     const res = await model.generateContent(prompt);
-    return JSON.parse(res.response.text());
+    return safeJsonParse(res.response.text());
 }
 
 async function handleScoreLead(model: any, leadData: any) {
     const prompt = `Avalie o potencial de venda (0-10) desta empresa: ${JSON.stringify(leadData)}. Retorne JSON: {"score": number, "reason": "string"}`;
     const res = await model.generateContent(prompt);
-    return JSON.parse(res.response.text());
+    return safeJsonParse(res.response.text());
 }
 
 async function handlePersonalizeScript(model: any, lead: any, template: string) {
