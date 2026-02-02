@@ -8,6 +8,7 @@ import {
     TrendingUp, AlertTriangle, Search, MessageSquare,
     Zap, Ban
 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 interface AdminDashboardProps {
     adminEmail: string;
@@ -28,8 +29,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
 
     useEffect(() => {
         loadAdminData();
-        const interval = setInterval(loadAdminData, 30000);
-        return () => clearInterval(interval);
+
+        // Real-time updates
+        const channel = supabase
+            .channel('admin_realtime_leads')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+                loadAdminData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const loadAdminData = async () => {

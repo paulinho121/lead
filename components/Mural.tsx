@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Lead } from '../types';
 import { leadService } from '../services/dbService';
 import { Search, MapPin, Phone, Mail, Building2, User, ExternalLink, Calendar } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 interface MuralProps {
     profiles: any[];
@@ -15,6 +16,18 @@ const Mural: React.FC<MuralProps> = ({ profiles }) => {
 
     useEffect(() => {
         loadData();
+
+        // Real-time updates
+        const channel = supabase
+            .channel('mural_realtime_leads')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+                loadData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const loadData = async () => {

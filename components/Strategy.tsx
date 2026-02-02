@@ -7,6 +7,7 @@ import { generatePersonalizedScript } from '../services/geminiService';
 interface StrategyProps {
   leads: Lead[];
   onUpdateLead: (lead: Lead) => Promise<void>;
+  profiles: any[];
 }
 
 const EMAIL_TEMPLATES = [
@@ -20,52 +21,52 @@ const EMAIL_TEMPLATES = [
 
 Estava analisando algumas empresas em {municipio} e notei que a {razao_social} [Inserir algo específico que você notou].
 
-Trabalhamos ajudando empresas do setor [Setor] a resolver [Problema Comum]. Acredito que poderíamos ter uma sinergia interessante.
+Como representantes oficiais de marcas líderes como Aputure, DZO, Caligre, Astera e Cream Source, trabalhamos ajudando produtoras e locadoras a elevar o nível de suas produções com o que há de melhor em tecnologia.
 
-Você teria 5 minutos para um café virtual na próxima terça?
+Acredito que poderíamos ter uma sinergia interessante. Você teria 5 minutos para um café virtual na próxima terça?
 
 Att,
-[Seu Nome]`,
-    description: 'Ideal para o primeiro contato. Quebra o gelo com uma dor real.'
+{vendedor_nome}`,
+    description: 'Ideal para o primeiro contato. Quebra o gelo com as marcas.'
   },
   {
     id: 'direct-value',
     name: '🚀 Proposta de Valor',
     badge: 'Foco em ROI',
     perf: '74%',
-    subject: 'Oportunidade para {razao_social}',
+    subject: 'Equipamento de Elite para {razao_social}',
     body: `Olá time da {razao_social},
 
-Vi que vocês estão sediados em {municipio} e gostaria de apresentar uma solução que tem ajudado nossos parceiros a reduzir [Custo/Tempo] em até [X]%.
+Vi que vocês estão sediados em {municipio} e gostaria de apresentar as novas soluções da Aputure, DZO e Astera que têm ajudado nossos parceiros a reduzir tempo de set e aumentar a qualidade visual em até [X]%.
 
-Diferente de outras soluções, nós focamos em [Diferencial Único].
+Diferente de equipamentos genéricos, as marcas que representamos (incluindo Caligre e Cream Source) focam em durabilidade e precisão técnica.
 
 Podemos agendar uma breve call de 10 minutos para eu te mostrar como isso se aplica ao seu cenário?
 
 Um abraço,
-[Seu Nome]`,
-    description: 'Vá direto ao ponto com números e benefícios claros.'
+{vendedor_nome}`,
+    description: 'Vá direto ao ponto com marcas e benefícios claros.'
   },
   {
     id: 'partnership',
     name: '🤝 Parceria Estratégica',
     badge: 'Networking',
     perf: '68%',
-    subject: 'Parceria: [Sua Empresa] + {razao_social}',
+    subject: 'Parceria: Especialista em Iluminação/Lentes + {razao_social}',
     body: `Bom dia!
 
-Meu nome é [Seu Nome] e acompanho o trabalho da {razao_social} há algum tempo.
+Meu nome é {vendedor_nome} e acompanho o trabalho da {razao_social} há algum tempo.
 
-Tenho um projeto que acredito complementar muito bem o que vocês já entregam em {uf}. Gostaria de validar se faz sentido pensarmos em algo juntos.
+Represento oficialmente as marcas Aputure, DZO, Caligre, Astera e Cream Source em {uf}. Tenho um projeto que acredito complementar muito bem o que vocês já entregam.
 
-Consegue me dar um retorno sobre sua disponibilidade?
+Gostaria de validar se faz sentido pensarmos em algo juntos. Consegue me dar um retorno sobre sua disponibilidade?
 
 Obrigado!`,
-    description: 'Abordagem suave para parcerias de longo prazo.'
+    description: 'Abordagem suave focada em parceria de longo prazo.'
   }
 ];
 
-const Strategy: React.FC<StrategyProps> = ({ leads, onUpdateLead }) => {
+const Strategy: React.FC<StrategyProps> = ({ leads, onUpdateLead, profiles }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(EMAIL_TEMPLATES[0]);
   const [customBody, setCustomBody] = useState(selectedTemplate.body);
   const [customSubject, setCustomSubject] = useState(selectedTemplate.subject);
@@ -84,7 +85,8 @@ const Strategy: React.FC<StrategyProps> = ({ leads, onUpdateLead }) => {
     return text
       .replace(/{razao_social}/g, lead.razaoSocial || 'Sua Empresa')
       .replace(/{municipio}/g, lead.municipio || 'sua cidade')
-      .replace(/{uf}/g, lead.uf || 'seu estado');
+      .replace(/{uf}/g, lead.uf || 'seu estado')
+      .replace(/{vendedor_nome}/g, (profiles.find(p => p.id === lead.userId)?.fullname || 'Consultor de Vendas'));
   };
 
   const handleTemplateChange = (template: typeof EMAIL_TEMPLATES[0]) => {

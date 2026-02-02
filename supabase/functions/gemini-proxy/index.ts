@@ -101,7 +101,11 @@ async function handleScoreLead(model: any, leadData: any) {
 }
 
 async function handlePersonalizeScript(model: any, lead: any, template: string) {
-    const prompt = `Personalize este template de email: "${template}" para este lead: ${JSON.stringify(lead)}. Retorne apenas o texto final.`;
+    const prompt = `Você é um consultor especialista em equipamentos de iluminação e ótica cinematográfica. 
+    Personalize este template de email: "${template}" para este lead: ${JSON.stringify(lead)}.
+    Considere que somos representantes oficiais das marcas: Aputure, DZO, Caligre, Astera e Cream Source.
+    O tom deve ser profissional, direto e focado em gerar curiosidade técnica ou parceria produtiva.
+    Retorne APENAS o texto final do e-mail ou mensagem, sem explicações extras.`;
     const res = await model.generateContent(prompt);
     return { text: res.response.text() };
 }

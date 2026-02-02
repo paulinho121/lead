@@ -120,15 +120,26 @@ const App: React.FC = () => {
   // Real-time profiles update
   useEffect(() => {
     if (user) {
-      const channel = supabase
+      const profileChannel = supabase
         .channel('profiles_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
           loadProfiles();
         })
         .subscribe();
 
+      const leadChannel = supabase
+        .channel('leads_realtime_dashboard')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+          console.log('🔄 Dashboard Real-time change detected:', payload);
+          loadRanking();
+          loadStats();
+          loadDashboardData();
+        })
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(profileChannel);
+        supabase.removeChannel(leadChannel);
       };
     }
   }, [user]);
@@ -286,14 +297,16 @@ const App: React.FC = () => {
       // Atualiza localmente
       setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
 
-      // Sincroniza com banco - Preserva o userId original se existir (para não desatribuir leads de outros ou do admin)
+      // Sincroniza com banco - Atribui ao usuário logado se o lead estiver sem dono
       const leadToSave = {
         ...updatedLead,
-        userId: updatedLead.userId === undefined ? (isAdmin ? null : user.id) : updatedLead.userId
+        userId: updatedLead.userId || user.id
       };
 
       await leadService.upsertLeads([leadToSave]);
       loadStats();
+      loadRanking();
+      loadDashboardData();
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
       loadLeads();
@@ -405,7 +418,7 @@ const App: React.FC = () => {
             {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
             {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
             {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
-            {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} />}
+            {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} profiles={profiles} />}
             {activeTab === AppTab.ADMIN && isAdmin && (
               <AdminDashboard adminEmail={user.email} adminId={user.id} />
             )}

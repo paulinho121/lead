@@ -89,7 +89,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       return acc;
     }, []).sort((a, b) => b.value - a.value).slice(0, 5);
 
-    const sourceData = externalSalespersonData || (rankingLeads.length > 0 ? rankingLeads : leads);
+    const sourceData = (externalSalespersonData && externalSalespersonData.length > 0)
+      ? externalSalespersonData
+      : (rankingLeads.length > 0 ? rankingLeads : leads);
 
     const salespersonData = sourceData.reduce((acc: any[], item) => {
       if (!item.userId && !item.user_id) return acc;
@@ -140,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       .slice(0, 5);
 
     return { total, enriched, pending, failed, hasContact, statusData, stateData, salespersonData, sourceConversionData, tasks, hotLeads };
-  }, [leads, totalLeadCount, profiles, rankingLeads]);
+  }, [leads, totalLeadCount, profiles, rankingLeads, externalStateData, externalSalespersonData, globalStats]);
 
   const { total, enriched, hasContact, statusData, stateData, salespersonData, sourceConversionData, tasks, hotLeads } = stats;
 
