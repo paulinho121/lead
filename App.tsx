@@ -216,12 +216,12 @@ const App: React.FC = () => {
     setIsEnriching(true);
 
     try {
-      // 1. Busca leads que precisam de atenção diretamente no banco (independente da página atual)
+      // 1. Busca leads que precisam de atenção diretamente no banco
       const { data: remoteLeads, error } = await supabase
         .from('leads')
         .select('*')
-        .or('status.eq.pending,status.eq.failed,and(status.eq.enriched,email.is.null)')
-        .is('email_not_found', null) // Ignora leads que já foram processados e não tiveram email encontrado
+        .or('status.eq.pending,status.eq.processing,status.eq.failed,and(status.eq.enriched,email.is.null)')
+        .neq('email_not_found', true) // Pega quem é null ou false (não tentado ou sucesso anterior)
         .limit(100);
 
       if (error) throw error;
