@@ -44,7 +44,7 @@ const TopBar: React.FC<TopBarProps> = ({
                         <span className="block text-[8px] text-[var(--primary)] font-black uppercase tracking-widest opacity-70">
                             {user?.user_metadata?.fullname || 'Vendedor Pro'}
                         </span>
-                        LeadPro <span className="text-[var(--primary)] text-sm">B2B</span>
+                        LP <span className="text-[var(--primary)] text-sm">B2B</span>
                     </h1>
                 </div>
                 <button

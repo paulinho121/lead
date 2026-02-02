@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Menu, X, Shield, Video, Download, Sparkles, Loader2, Users, Globe, Palette } from 'lucide-react';
+import { Menu, X, Shield, Video, Download, Sparkles, Loader2, Users, Globe, Palette, LayoutDashboard } from 'lucide-react';
 import { AppTab, Lead } from '../../types';
 import { NAVIGATION } from '../../constants';
 import { THEMES } from '../ThemeSelector';
@@ -112,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             setIsMobileMenuOpen(false); // Close on click for mobile
                         }}
                         className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === item.id
-                            ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20'
+                            ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20 scale-[1.02]'
                             : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
                             }`}
                     >
@@ -279,6 +279,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 </div>
             </div>
+            {/* Dashboard Floating Quick Access Button for Mobile */}
+            {!isMobileMenuOpen && activeTab !== AppTab.DASHBOARD && (
+                <button
+                    onClick={() => setActiveTab(AppTab.DASHBOARD)}
+                    className="md:hidden fixed bottom-6 left-6 z-50 w-14 h-14 bg-[var(--primary)] text-white rounded-full shadow-2xl flex items-center justify-center animate-bounce-subtle border-4 border-white dark:border-slate-800"
+                    title="Voltar ao Dashboard"
+                >
+                    <LayoutDashboard size={24} />
+                </button>
+            )}
         </aside>
     );
 };

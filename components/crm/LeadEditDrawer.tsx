@@ -78,7 +78,7 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
 
                     <div className="flex gap-4">
                         <a
-                            href={`https://wa.me/${lead.telefone?.replace(/\D/g, '')}`}
+                            href={`https://wa.me/${(editValues.telefone || lead.telefone)?.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 p-4 bg-emerald-500 text-white rounded-2xl font-black text-xs hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
@@ -86,7 +86,7 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
                             <MessageCircle size={18} /> WHATSAPP
                         </a>
                         <a
-                            href={`tel:${lead.telefone?.replace(/\D/g, '')}`}
+                            href={`tel:${(editValues.telefone || lead.telefone)?.replace(/\D/g, '')}`}
                             className="flex-1 flex items-center justify-center gap-2 p-4 bg-blue-500 text-white rounded-2xl font-black text-xs hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
                         >
                             <Phone size={18} /> LIGAR AGORA
@@ -152,23 +152,40 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
                             </section>
                         )}
 
-                        <section>
-                            <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block px-1 tracking-widest">E-mail de Contato</label>
-                            <div className="relative group/input">
-                                <input
-                                    type="email"
-                                    className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-[var(--primary)] outline-none transition-all"
-                                    placeholder="exemplo@empresa.com.br"
-                                    value={editValues.email || ''}
-                                    onChange={e => setEditValues({ ...editValues, email: e.target.value })}
-                                />
-                                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-[var(--primary)] transition-colors" size={18} />
-                            </div>
-                            <label className="flex items-center gap-2 mt-3 cursor-pointer group px-1">
-                                <input type="checkbox" checked={editValues.emailNotFound} onChange={e => setEditValues({ ...editValues, emailNotFound: e.target.checked })} className="w-4 h-4 rounded text-[var(--primary)]" />
-                                <span className="text-xs font-bold text-slate-500 group-hover:text-[var(--primary)] transition-colors">Marcar como não encontrado</span>
-                            </label>
-                        </section>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <section>
+                                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block px-1 tracking-widest">Telefone de Contato</label>
+                                <div className="relative group/input">
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-[var(--primary)] outline-none transition-all"
+                                        placeholder="(00) 00000-0000"
+                                        value={editValues.telefone || ''}
+                                        onChange={e => setEditValues({ ...editValues, telefone: e.target.value })}
+                                    />
+                                    <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-[var(--primary)] transition-colors" size={18} />
+                                </div>
+                            </section>
+
+                            <section>
+                                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block px-1 tracking-widest">E-mail de Contato</label>
+                                <div className="relative group/input">
+                                    <input
+                                        type="email"
+                                        className="w-full p-4 pr-12 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-[var(--primary)] outline-none transition-all"
+                                        placeholder="exemplo@empresa.com.br"
+                                        value={editValues.email || ''}
+                                        onChange={e => setEditValues({ ...editValues, email: e.target.value })}
+                                    />
+                                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-[var(--primary)] transition-colors" size={18} />
+                                </div>
+                            </section>
+                        </div>
+
+                        <label className="flex items-center gap-2 mt-1 cursor-pointer group px-1">
+                            <input type="checkbox" checked={editValues.emailNotFound} onChange={e => setEditValues({ ...editValues, emailNotFound: e.target.checked })} className="w-4 h-4 rounded text-[var(--primary)]" />
+                            <span className="text-xs font-bold text-slate-500 group-hover:text-[var(--primary)] transition-colors">Marcar e-mail como não encontrado</span>
+                        </label>
 
                         <div className="grid grid-cols-2 gap-4">
                             <section>
