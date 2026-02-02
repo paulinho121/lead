@@ -399,6 +399,7 @@ const App: React.FC = () => {
                 loading={isLoading}
                 hasMore={hasMore}
                 onLoadMore={loadMoreLeads}
+                availableStates={availableStates}
               />
             )}
             {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}

@@ -12,10 +12,12 @@ interface LeadListProps {
   loading?: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  availableStates?: string[];
 }
 
-const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore }) => {
+const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore, availableStates = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedState, setSelectedState] = useState('');
 
   if (loading) {
     return (
@@ -44,14 +46,18 @@ const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore
     );
   }
 
-  const filteredLeads = leads.filter(l =>
-    l.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.cnpj.includes(searchTerm) ||
-    (l.email && l.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (l.niche && l.niche.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (l.website && l.website.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (l.atividadePrincipal && l.atividadePrincipal.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredLeads = leads.filter(l => {
+    const matchesSearch = l.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.cnpj.includes(searchTerm) ||
+      (l.email && l.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.niche && l.niche.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.website && l.website.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.atividadePrincipal && l.atividadePrincipal.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesState = !selectedState || l.uf === selectedState;
+
+    return matchesSearch && matchesState;
+  });
 
   const exportCSV = () => {
     exportLeadsToCSV(leads);
@@ -87,10 +93,26 @@ const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <button className="flex-1 md:flex-none px-6 py-3.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl text-[var(--text-main)] hover:bg-[var(--bg-main)] flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
-              <Filter size={14} />
-              Filtrar
-            </button>
+            <div className="relative w-full md:w-40">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary)]" size={14} />
+              <select
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="w-full pl-9 pr-4 py-3.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl text-[var(--text-main)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 text-xs font-black uppercase appearance-none shadow-sm cursor-pointer"
+              >
+                <option value="">TODOS ESTADOS</option>
+                {availableStates.length > 0 ? (
+                  availableStates.map(uf => (
+                    <option key={uf} value={uf}>{uf.toUpperCase()}</option>
+                  ))
+                ) : (
+                  // Fallback se não vier via prop, tenta calcular dos leads atuais
+                  Array.from(new Set(leads.map(l => l.uf).filter(Boolean))).sort().map(uf => (
+                    <option key={uf} value={uf}>{uf.toUpperCase()}</option>
+                  ))
+                )}
+              </select>
+            </div>
           </div>
         </div>
 
