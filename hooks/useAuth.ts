@@ -12,17 +12,25 @@ export const useAuth = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        supabase?.auth.getSession().then(({ data: { session } }) => {
+        if (!supabase) {
+            setIsLoading(false);
+            return;
+        }
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setIsAuthenticated(!!session);
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+        }).catch(err => {
+            console.error("Auth session error:", err);
+            setIsLoading(false);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setIsAuthenticated(!!session);
             setUser(session?.user ?? null);
             setIsLoading(false);
         });
-
-        const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
-            setIsAuthenticated(!!session);
-            setUser(session?.user ?? null);
-            setIsLoading(false);
-        }) || { data: { subscription: null } };
 
         return () => subscription?.unsubscribe();
     }, []);

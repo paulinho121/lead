@@ -1,0 +1,17 @@
+{
+    "short_name": "LeadPro",
+    "name": "B2B Lead Enrichment Pro",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#00A38E",
+    "background_color": "#ffffff",
+    "orientation": "portrait"
+}
