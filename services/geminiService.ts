@@ -47,3 +47,14 @@ export const generatePersonalizedScript = async (lead: any, template: string) =>
     return template;
   }
 };
+
+export const extractLeadsFromText = async (text: string) => {
+  try {
+    const res = await aiBridge.callAiFunction('parseText', { text, mode: 'discovery' });
+    return res || [];
+  } catch (error) {
+    console.error("Gemini Proxy Discovery Error:", error);
+    return [];
+  }
+};
+

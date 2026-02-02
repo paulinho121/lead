@@ -100,10 +100,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             <nav className="flex-1 p-4 pb-20 space-y-1 overflow-y-auto custom-scrollbar">
                 {NAVIGATION.filter(item => {
                     // Vendedores veem Dashboard, CRM, Mural e Estratégia
+                    // Captura (capture) agora é restrito apenas ao Administrador
                     if (!isAdmin) {
                         return item.id === 'dashboard' || item.id === 'crm' || item.id === 'mural' || item.id === 'strategy';
                     }
-                    // Admin sees everything
+                    // Admin sees everything (including capture)
                     return true;
                 }).map(item => (
                     <button

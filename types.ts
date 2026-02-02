@@ -73,5 +73,6 @@ export enum AppTab {
   STRATEGY = 'strategy',
   MURAL = 'mural',
   ADMIN = 'admin',
-  REUNIAO = 'reuniao'
+  REUNIAO = 'reuniao',
+  CAPTURE = 'capture'
 }

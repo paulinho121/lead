@@ -50,7 +50,7 @@ serve(async (req) => {
 
         switch (action) {
             case 'parseText':
-                result = await handleParseText(model, payload.text);
+                result = await handleParseText(model, payload.text, payload.mode);
                 break;
             case 'discoverEmail':
                 result = await handleDiscoverEmail(model, payload.razaoSocial, payload.cnpj);
@@ -63,6 +63,9 @@ serve(async (req) => {
                 break;
             case 'fetchCompanyData':
                 result = await handleFetchCompanyData(payload.cnpj);
+                break;
+            case 'scrapeUrl':
+                result = await handleScrapeUrl(payload.url);
                 break;
             default:
                 throw new Error('Unknown action: ' + action);
@@ -82,11 +85,46 @@ serve(async (req) => {
     }
 })
 
-async function handleParseText(model: any, text: string) {
-    const prompt = `Extraia informações de empresas brasileiras (especialmente CNPJ, Email e Telefone) do seguinte texto. Retorne APENAS um array JSON. Texto: ${text.substring(0, 30000)}`;
+async function handleParseText(model: any, text: string, mode?: string) {
+    const isDiscovery = mode === 'discovery';
+    const prompt = isDiscovery
+        ? `Extraia uma lista de EMPRESAS do seguinte texto (geralmente uma lista de associados ou catálogo). 
+           Identifique a Razão Social/Nome e o Website (se houver). 
+           Retorne APENAS um array JSON de objetos: [{"razaoSocial": "...", "website": "..."}].
+           Texto: ${text.substring(0, 30000)}`
+        : `Extraia informações de empresas brasileiras (especialmente CNPJ, Email e Telefone) do seguinte texto. Retorne APENAS um array JSON. Texto: ${text.substring(0, 30000)}`;
+
     const res = await model.generateContent(prompt);
     return safeJsonParse(res.response.text());
 }
+
+async function handleScrapeUrl(url: string) {
+    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!firecrawlKey) throw new Error('FIRECRAWL_API_KEY not set');
+
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${firecrawlKey}`
+        },
+        body: JSON.stringify({
+            url,
+            formats: ['markdown'],
+            onlyMainContent: false,
+            waitFor: 3000 // Give some time for lists to render
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Firecrawl Error: ${response.status} - ${err}`);
+    }
+
+    const data = await response.json();
+    return { markdown: data.data?.markdown || "" };
+}
+
 
 async function handleDiscoverEmail(model: any, razaoSocial: string, cnpj: string) {
     const prompt = `Com base na Razão Social: "${razaoSocial}" e CNPJ: "${cnpj}", sugira o email corporativo mais provável. Retorne JSON: {"email": "..."}`;

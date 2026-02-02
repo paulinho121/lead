@@ -67,5 +67,16 @@ export const firecrawlService = {
             console.error("Firecrawl Error:", error);
             return null;
         }
+    },
+
+    async scrapeUrl(url: string): Promise<string | null> {
+        try {
+            const { aiBridge } = await import('./aiBridge');
+            const res = await aiBridge.callAiFunction('scrapeUrl', { url });
+            return res.markdown || null;
+        } catch (error) {
+            console.error("Firecrawl Scrape Error:", error);
+            return null;
+        }
     }
 };

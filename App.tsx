@@ -23,6 +23,7 @@ import ThemeSelector, { THEMES } from './components/ThemeSelector';
 import MeetingRoom from './components/MeetingRoom';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
+import AssociationScraper from './components/AssociationScraper';
 import { useAuth } from './hooks/useAuth';
 
 
@@ -456,6 +457,12 @@ const App: React.FC = () => {
             {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} onDeleteLead={deleteLead} />}
             {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
             {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} profiles={profiles} />}
+            {activeTab === AppTab.CAPTURE && (
+              <AssociationScraper onLeadsFound={(found) => {
+                addLeads(found as Lead[]);
+                setActiveTab(AppTab.ENRICH);
+              }} />
+            )}
             {activeTab === AppTab.ADMIN && isAdmin && (
               <AdminDashboard adminEmail={user.email} adminId={user.id} />
             )}
