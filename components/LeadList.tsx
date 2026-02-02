@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Lead } from '../types';
-import { Search, Filter, Download, Mail, Phone, MapPin, Instagram, Globe, Facebook } from 'lucide-react';
+import { Search, Filter, Download, Mail, Phone, MapPin, Instagram, Globe, Facebook, Trash2 } from 'lucide-react';
 import { exportLeadsToCSV } from '../services/exportService';
 import Skeleton from './Skeleton';
 
@@ -13,9 +13,10 @@ interface LeadListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   availableStates?: string[];
+  onDeleteLead?: (id: string) => Promise<void>;
 }
 
-const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore, availableStates = [] }) => {
+const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore, availableStates = [], onDeleteLead }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedState, setSelectedState] = useState('');
 
@@ -167,6 +168,15 @@ const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore
                       >
                         <Search size={16} />
                       </a>
+                      {onDeleteLead && (
+                        <button
+                          onClick={() => onDeleteLead(lead.id)}
+                          className="p-2.5 bg-red-50 rounded-xl text-red-400 hover:text-red-600 hover:scale-110 transition-all shadow-sm border border-red-100"
+                          title="Excluir Lead"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -234,6 +244,14 @@ const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore
                       >
                         <Search size={18} />
                       </a>
+                      {onDeleteLead && (
+                        <button
+                          onClick={() => onDeleteLead(lead.id)}
+                          className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 active:bg-red-600 active:text-white transition-all shadow-sm border border-red-100"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                       {lead.website && (
                         <a
                           href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}

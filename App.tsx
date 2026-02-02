@@ -333,6 +333,23 @@ const App: React.FC = () => {
     }
   };
 
+  const deleteLead = async (leadId: string) => {
+    if (!user) return;
+    if (!confirm('Tem certeza que deseja excluir este lead permanentemente?')) return;
+
+    try {
+      await leadService.deleteLead(leadId);
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+      loadStats();
+      loadRanking();
+      loadDashboardData();
+      alert("Lead excluído com sucesso! Ele foi removido permanentemente e você já pode solicitar um novo lead para substituí-lo.");
+    } catch (error) {
+      console.error("Erro ao excluir lead:", error);
+      alert("Houve um erro ao excluir o lead.");
+    }
+  };
+
   const handleLogout = async () => {
     if (user) await leadService.setOffline(user.id);
     if (supabase) await supabase.auth.signOut();
@@ -343,7 +360,7 @@ const App: React.FC = () => {
     const unmanagedLeads = leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l));
 
     if (unmanagedLeads.length > 0) {
-      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos.`);
+      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos. Para liberar espaço e solicitar novos contatos, você deve concluir a gestão destes leads ou usar a opção 'Desqualificar' ou 'Excluir' naqueles que não se encaixam no seu perfil.`);
       return;
     }
 
@@ -432,10 +449,11 @@ const App: React.FC = () => {
                 hasMore={hasMore}
                 onLoadMore={loadMoreLeads}
                 availableStates={availableStates}
+                onDeleteLead={deleteLead}
               />
             )}
             {activeTab === AppTab.ENRICH && <Enricher onProcessed={addLeads} leads={leads} onUpdateLead={updateLead} />}
-            {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} />}
+            {activeTab === AppTab.CRM && <CRM leads={leads} onUpdateLead={updateLead} onDeleteLead={deleteLead} />}
             {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
             {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} profiles={profiles} />}
             {activeTab === AppTab.ADMIN && isAdmin && (

@@ -11,10 +11,11 @@ import LeadEditDrawer from './crm/LeadEditDrawer';
 interface CRMProps {
     leads: Lead[];
     onUpdateLead: (lead: Lead) => Promise<void>;
+    onDeleteLead: (leadId: string) => Promise<void>;
     isSaaSAdmin?: boolean;
 }
 
-const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
+const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, onDeleteLead, isSaaSAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedState, setSelectedState] = useState<string>('all');
@@ -179,6 +180,7 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                 editValues={editValues}
                 setEditValues={setEditValues}
                 handleSave={handleSave}
+                onDeleteLead={onDeleteLead}
             />
         </div>
     );

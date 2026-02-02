@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Lead } from '../../types';
-import { Save, X, Globe, Instagram, Facebook, Search, Mail, Save as SaveIcon, Phone, MessageCircle, Calendar } from 'lucide-react';
+import { Save, X, Globe, Instagram, Facebook, Search, Mail, Save as SaveIcon, Phone, MessageCircle, Calendar, Trash2, Ban } from 'lucide-react';
 
 interface LeadEditDrawerProps {
     lead: Lead | null;
@@ -9,6 +9,7 @@ interface LeadEditDrawerProps {
     editValues: any;
     setEditValues: (v: any) => void;
     handleSave: (lead: Lead) => Promise<void>;
+    onDeleteLead: (leadId: string) => Promise<void>;
 }
 
 const RESPONSE_OPTIONS = [
@@ -32,7 +33,7 @@ const STAGE_OPTIONS = [
     { id: 'disqualified', label: 'DESQUALIFICADO (Fora de Nicho)', color: 'slate' }
 ];
 
-const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValues, setEditValues, handleSave }) => {
+const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValues, setEditValues, handleSave, onDeleteLead }) => {
     if (!lead) return null;
 
     return (
@@ -95,6 +96,22 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
                     </div>
 
                     <div className="space-y-6">
+                        <div className="p-4 bg-slate-50 border-2 border-slate-100 rounded-[24px] space-y-3">
+                            <label className="text-[10px] font-black uppercase text-slate-400 block px-1 tracking-widest">Ações Rápidas</label>
+                            <button
+                                onClick={() => {
+                                    setEditValues({
+                                        ...editValues,
+                                        stage: 'disqualified',
+                                        lostReason: 'Fora de Nicho / Desqualificado'
+                                    });
+                                }}
+                                className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl font-black text-[10px] transition-all border-2 ${editValues.stage === 'disqualified' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                            >
+                                <Ban size={14} /> DESQUALIFICAR (FORA DE NICHO)
+                            </button>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <section>
                                 <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block px-1 tracking-widest">Estágio do Funil</label>
@@ -223,13 +240,23 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
                     <button
                         onClick={() => handleSave(lead)}
                         className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                     >
                         <SaveIcon size={20} />
                         SALVAR E FINALIZAR GESTÃO
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            await onDeleteLead(lead.id);
+                            onClose();
+                        }}
+                        className="w-full bg-white text-red-500 border-2 border-red-50 py-3 rounded-2xl font-black text-[10px] hover:bg-red-50 hover:border-red-100 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Trash2 size={14} /> EXCLUIR LEAD PERMANENTEMENTE
                     </button>
                 </div>
             </div>

@@ -5,6 +5,7 @@ import { AppTab, Lead } from '../../types';
 import { NAVIGATION } from '../../constants';
 import { THEMES } from '../ThemeSelector';
 import { exportLeadsToCSV } from '../../services/exportService';
+import { isLeadFullyManaged } from '../../hooks/useLeadManagement';
 
 interface SidebarProps {
     activeTab: AppTab;
@@ -180,6 +181,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {/* Salesperson Specific Actions */}
                     {!isAdmin && (
                         <div className="space-y-3 pt-1">
+                            {/* Indicador de Capacidade */}
+                            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-[var(--border)]">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Capacidade de Gestão</span>
+                                    <span className={`text-[10px] font-black ${leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 10 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                        {leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length}/10
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 8 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                        style={{ width: `${Math.min((leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length / 10) * 100, 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-[8px] text-slate-400 font-bold mt-1.5 leading-tight italic">
+                                    {leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 10
+                                        ? "⚠️ No limite! Exclua ou desqualifique leads para liberar espaço."
+                                        : "Você pode solicitar novos leads enquanto tiver espaço aqui."}
+                                </p>
+                            </div>
+
                             <div className="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-[var(--border)] shadow-sm space-y-2">
                                 <label htmlFor="uf-store-filter" className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1 cursor-pointer">
                                     <Globe size={12} className="text-[var(--primary)]" />
