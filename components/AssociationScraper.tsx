@@ -11,30 +11,45 @@ interface AssociationScraperProps {
 
 const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound }) => {
     const [url, setUrl] = useState('');
+    const [manualText, setManualText] = useState('');
+    const [isManual, setIsManual] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [error, setError] = useState('');
 
     const handleCapture = async () => {
-        if (!url) return;
+        if (!url && !manualText) return;
         setIsLoading(true);
         setError('');
         setResults([]);
 
         try {
-            setStatus('Lendo conteúdo da página...');
-            const markdown = await firecrawlService.scrapeUrl(url);
+            let textToProcess = manualText;
 
-            if (!markdown) {
-                throw new Error('Não foi possível ler o conteúdo desta URL. Verifique se o link está correto.');
+            if (!isManual && url) {
+                setStatus('Lendo conteúdo da página...');
+                try {
+                    const markdown = await firecrawlService.scrapeUrl(url);
+                    if (!markdown) throw new Error('Não foi possível ler a URL. Tente o modo manual.');
+                    textToProcess = markdown;
+                } catch (scrapeErr: any) {
+                    const isLimit = scrapeErr.message?.includes('402') || scrapeErr.message?.includes('limit');
+                    if (isLimit) {
+                        setError('Limite do Firecrawl atingido. Mudando para modo manual...');
+                        setIsManual(true);
+                        setIsLoading(false);
+                        return;
+                    }
+                    throw scrapeErr;
+                }
             }
 
             setStatus('IA extraindo nomes de empresas...');
-            const foundLeads = await extractLeadsFromText(markdown);
+            const foundLeads = await extractLeadsFromText(textToProcess);
 
             if (!foundLeads || foundLeads.length === 0) {
-                throw new Error('A IA não conseguiu identificar empresas nesta página. Tente uma URL mais específica.');
+                throw new Error('A IA não conseguiu identificar empresas. Tente copiar e colar o texto manualmente.');
             }
 
             setResults(foundLeads);
@@ -75,28 +90,69 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
             </header>
 
             <div className="bg-[var(--bg-card)] rounded-[32px] p-8 shadow-xl border border-[var(--border)] glass-morphism space-y-6">
+                <div className="flex justify-center gap-4 mb-2">
+                    <button
+                        onClick={() => setIsManual(false)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isManual ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                    >
+                        Captura via URL
+                    </button>
+                    <button
+                        onClick={() => setIsManual(true)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isManual ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                    >
+                        Captura Manual (Texto)
+                    </button>
+                </div>
+
                 <div className="max-w-3xl mx-auto space-y-4">
-                    <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">URL da Associação ou Lista</label>
-                    <div className="flex gap-3">
-                        <div className="relative flex-1 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors" size={20} />
-                            <input
-                                type="url"
-                                placeholder="https://exemplo.com.br/associados"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-all font-bold"
-                            />
-                        </div>
-                        <button
-                            onClick={handleCapture}
-                            disabled={isLoading || !url}
-                            className="bg-[var(--primary)] text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg shadow-[var(--primary)]/20"
-                        >
-                            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Magnet size={18} />}
-                            CAPTURAR
-                        </button>
-                    </div>
+                    {!isManual ? (
+                        <>
+                            <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">URL da Associação ou Lista</label>
+                            <div className="flex gap-3">
+                                <div className="relative flex-1 group">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary)] transition-colors" size={20} />
+                                    <input
+                                        type="url"
+                                        placeholder="https://exemplo.com.br/associados"
+                                        value={url}
+                                        onChange={(e) => setUrl(e.target.value)}
+                                        className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-all font-bold"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleCapture}
+                                    disabled={isLoading || !url}
+                                    className="bg-[var(--primary)] text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg shadow-[var(--primary)]/20"
+                                >
+                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Magnet size={18} />}
+                                    CAPTURAR
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Cole o conteúdo da página aqui</label>
+                            <div className="space-y-4">
+                                <textarea
+                                    placeholder="Copie e cole os nomes das empresas, links ou qualquer texto da página da associação..."
+                                    value={manualText}
+                                    onChange={(e) => setManualText(e.target.value)}
+                                    rows={6}
+                                    className="w-full p-6 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-all font-medium text-sm resize-none"
+                                />
+                                <button
+                                    onClick={handleCapture}
+                                    disabled={isLoading || !manualText}
+                                    className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg shadow-[var(--primary)]/20"
+                                >
+                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                                    EXTRAIR LEADS COM IA
+                                </button>
+                            </div>
+                        </>
+                    )}
+
                     {status && (
                         <div className="flex items-center gap-2 text-emerald-500 text-xs font-bold animate-pulse px-1">
                             <Loader2 size={14} className="animate-spin" />
@@ -104,7 +160,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                         </div>
                     )}
                     {error && (
-                        <div className="flex items-center gap-2 text-red-500 text-xs font-bold px-1">
+                        <div className="flex items-center gap-2 text-red-500 text-xs font-bold px-1 py-2 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
                             <AlertCircle size={14} />
                             {error}
                         </div>

@@ -31,25 +31,30 @@ export const backgroundEnricher = {
 
                     // IF API has NO email, try Scraping + IA
                     if (!email) {
-                        onLog('info', `IA buscando site oficial para ${data.razao_social}...`);
-                        const scrap = await firecrawlService.searchAndScrape(data.razao_social, lead.cnpj);
+                        try {
+                            onLog('info', `IA buscando site oficial para ${data.razao_social}...`);
+                            const scrap = await firecrawlService.searchAndScrape(data.razao_social, lead.cnpj);
 
-                        if (scrap?.website) {
-                            onLog('success', `Site oficial mapeado: ${scrap.website}`);
-                            scWebsite = scrap.website;
+                            if (scrap?.website) {
+                                onLog('success', `Site oficial mapeado: ${scrap.website}`);
+                                scWebsite = scrap.website;
 
-                            if ((scrap as any).markdown) {
-                                onLog('info', 'Extraindo contatos do conteúdo do site...');
-                                const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown);
-                                if (extra?.email) {
-                                    email = extra.email;
-                                    onLog('success', `E-mail encontrado via Scraping: ${email}`);
-                                }
-                                if (extra?.telefone && !telefone) {
-                                    telefone = extra.telefone;
-                                    onLog('success', `Telefone extraído do site: ${telefone}`);
+                                if ((scrap as any).markdown) {
+                                    onLog('info', 'Extraindo contatos do conteúdo do site...');
+                                    const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown);
+                                    if (extra?.email) {
+                                        email = extra.email;
+                                        onLog('success', `E-mail encontrado via Scraping: ${email}`);
+                                    }
+                                    if (extra?.telefone && !telefone) {
+                                        telefone = extra.telefone;
+                                        onLog('success', `Telefone extraído do site: ${telefone}`);
+                                    }
                                 }
                             }
+                        } catch (scrapErr: any) {
+                            const isLimit = scrapErr.message?.includes('402') || scrapErr.message?.includes('limit');
+                            onLog('error', isLimit ? 'Limite do Minerador Web atingido. Usando dedução simples...' : `Erro no Minerador: ${scrapErr.message}`);
                         }
 
                         // Fallback to normal Gemini discovery if still no email
