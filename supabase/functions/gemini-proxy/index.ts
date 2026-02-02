@@ -40,6 +40,9 @@ serve(async (req) => {
             case 'personalizeScript':
                 result = await handlePersonalizeScript(model, payload.lead, payload.template);
                 break;
+            case 'fetchCompanyData':
+                result = await handleFetchCompanyData(payload.cnpj);
+                break;
             default:
                 throw new Error('Unknown action: ' + action);
         }
@@ -82,4 +85,90 @@ async function handlePersonalizeScript(model: any, lead: any, template: string) 
     const prompt = `Personalize este template de email: "${template}" para este lead: ${JSON.stringify(lead)}. Retorne apenas o texto final.`;
     const res = await model.generateContent(prompt);
     return { text: res.response.text() };
+}
+
+async function handleFetchCompanyData(cnpj: string) {
+    const cleanCNPJ = cnpj.replace(/[^\d]/g, '');
+    let result = null;
+
+    try {
+        // 1. Try BrasilAPI
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`);
+        if (response.ok) {
+            const data = await response.json();
+            result = {
+                razao_social: data.razao_social || data.nome_fantasia || 'Empresa Encontrada',
+                nome_fantasia: data.nome_fantasia || '',
+                cnpj: data.cnpj || cleanCNPJ,
+                email: data.email || '',
+                telefone: data.ddd_telefone_1 || data.telefone || '',
+                municipio: data.municipio || '',
+                uf: data.uf || '',
+                website: data.website || '',
+                cnae_fiscal_descricao: data.cnae_fiscal_descricao || 'N/A',
+                situacao_cadastral: data.descricao_situacao_cadastral || 'ATIVA'
+            };
+        }
+
+        // 2. Fallback: ReceitaWS
+        if (!result || !result.email) {
+            try {
+                const respWS = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`);
+                if (respWS.ok) {
+                    const dataWS = await respWS.json();
+                    if (dataWS.status !== 'ERROR') {
+                        if (!result) {
+                            result = {
+                                razao_social: dataWS.nome || '',
+                                nome_fantasia: dataWS.fantasia || '',
+                                cnpj: cleanCNPJ,
+                                email: dataWS.email || '',
+                                telefone: dataWS.telefone || '',
+                                municipio: dataWS.municipio || '',
+                                uf: dataWS.uf || '',
+                                website: '',
+                                cnae_fiscal_descricao: dataWS.atividade_principal?.[0]?.text || '',
+                                situacao_cadastral: dataWS.situacao || 'ATIVA'
+                            };
+                        } else {
+                            result.email = dataWS.email || result.email;
+                            result.telefone = dataWS.telefone || result.telefone;
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // 3. Fallback: CNPJ.ws
+        if (!result || !result.email) {
+            try {
+                const respWS = await fetch(`https://publica.cnpj.ws/api/cnpj/v1/${cleanCNPJ}`);
+                if (respWS.ok) {
+                    const dataWS = await respWS.json();
+                    if (!result) {
+                        result = {
+                            razao_social: dataWS.razao_social || '',
+                            nome_fantasia: dataWS.estabelecimento?.nome_fantasia || '',
+                            cnpj: cleanCNPJ,
+                            email: dataWS.estabelecimento?.email || '',
+                            telefone: dataWS.estabelecimento?.telefone1 || '',
+                            municipio: dataWS.estabelecimento?.cidade?.nome || '',
+                            uf: dataWS.estabelecimento?.estado?.sigla || '',
+                            website: '',
+                            cnae_fiscal_descricao: dataWS.estabelecimento?.atividade_principal?.descricao || '',
+                            situacao_cadastral: dataWS.estabelecimento?.situacao_cadastral || 'ATIVA'
+                        };
+                    } else {
+                        result.email = dataWS.estabelecimento?.email || result.email;
+                        result.telefone = dataWS.estabelecimento?.telefone1 || result.telefone;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Error in handleFetchCompanyData:", error);
+        return null;
+    }
 }
