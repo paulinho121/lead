@@ -212,23 +212,33 @@ const App: React.FC = () => {
   };
 
   const processQueue = async () => {
-    const pendingLeads = leads.filter(l =>
-      l.status === 'pending' ||
-      l.status === 'failed' ||
-      (l.status === 'enriched' && !l.email)
-    );
-    if (pendingLeads.length === 0) {
-      alert("Nenhum lead pendente, com falha ou sem email na fila.");
-      return;
-    }
-
-    if (!confirm(`Deseja iniciar o enriquecimento de ${pendingLeads.length} leads? (Isso incluirá leads que estão sem email).`)) {
-      return;
-    }
-
+    setStatusMessage('Buscando leads...');
     setIsEnriching(true);
-    setStatusMessage('Iniciando...');
+
     try {
+      // 1. Busca leads que precisam de atenção diretamente no banco (independente da página atual)
+      const { data: remoteLeads, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or('status.eq.pending,status.eq.failed,and(status.eq.enriched,email.is.null)')
+        .is('email_not_found', null) // Ignora leads que já foram processados e não tiveram email encontrado
+        .limit(100);
+
+      if (error) throw error;
+
+      const pendingLeads = (remoteLeads || []).map(leadService.mapFromDb);
+
+      if (pendingLeads.length === 0) {
+        alert("Nenhum lead disponível para enriquecimento no momento.");
+        setIsEnriching(false);
+        return;
+      }
+
+      if (!confirm(`Deseja iniciar o enriquecimento de ${pendingLeads.length} leads localizados na base de dados?`)) {
+        setIsEnriching(false);
+        return;
+      }
+
       await backgroundEnricher.processLeads(
         pendingLeads,
         (updated) => {
@@ -271,9 +281,16 @@ const App: React.FC = () => {
   const updateLead = async (updatedLead: Lead) => {
     if (!user) return;
     try {
+      // Atualiza localmente
       setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
-      const leadWithUser = { ...updatedLead, userId: user.id };
-      await leadService.upsertLeads([leadWithUser]);
+
+      // Sincroniza com banco - Preserva o userId original se existir (para não desatribuir leads de outros ou do admin)
+      const leadToSave = {
+        ...updatedLead,
+        userId: updatedLead.userId === undefined ? (isAdmin ? null : user.id) : updatedLead.userId
+      };
+
+      await leadService.upsertLeads([leadToSave]);
       loadStats();
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);

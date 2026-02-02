@@ -75,6 +75,7 @@ export const backgroundEnricher = {
                         situacaoCadastral: data.situacao_cadastral,
                         status: isInactive ? 'failed' : 'enriched',
                         leadScore: score,
+                        emailNotFound: !email,
                         error: isInactive ? `Empresa ${data.situacao_cadastral}` : undefined
                     };
                     onUpdate(enrichedLead);
