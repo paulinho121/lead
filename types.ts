@@ -25,7 +25,7 @@ export interface Lead {
   facebook?: string;
   emailNotFound?: boolean;
   lastUpdated?: string;
-  stage?: 'lead' | 'contacted' | 'presentation' | 'negotiation' | 'closed_won' | 'closed_lost';
+  stage?: 'lead' | 'contacted' | 'presentation' | 'negotiation' | 'closed_won' | 'closed_lost' | 'disqualified';
   leadScore?: number;
   nextContactDate?: string;
   lostReason?: string;

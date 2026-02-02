@@ -58,11 +58,11 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
                     (lead.niche && lead.niche.toLowerCase().includes(n.toLowerCase()))
                 );
 
-                const matchesTab = activeSubTab === 'ready'
+                const matchesTab = (lead.stage !== 'disqualified') && (activeSubTab === 'ready'
                     ? (lead.status === 'enriched' && !lead.contacted)
                     : activeSubTab === 'contacted'
                         ? (lead.status === 'enriched' && lead.contacted)
-                        : (lead.status === 'pending' || lead.status === 'failed');
+                        : (lead.status === 'pending' || lead.status === 'failed'));
 
                 return matchesSearch && matchesState && matchesTab && matchesNiche;
             })
@@ -71,9 +71,9 @@ const CRM: React.FC<CRMProps> = ({ leads, onUpdateLead, isSaaSAdmin }) => {
 
     // Pre-calculate counts for tabs to avoid multiple filters in JSX
     const counts = useMemo(() => ({
-        ready: leads.filter(l => l.status === 'enriched' && !l.contacted).length,
-        contacted: leads.filter(l => l.status === 'enriched' && l.contacted).length,
-        pending: leads.filter(l => l.status === 'pending' || l.status === 'failed').length
+        ready: leads.filter(l => l.status === 'enriched' && !l.contacted && l.stage !== 'disqualified').length,
+        contacted: leads.filter(l => l.status === 'enriched' && l.contacted && l.stage !== 'disqualified').length,
+        pending: leads.filter(l => (l.status === 'pending' || l.status === 'failed') && l.stage !== 'disqualified').length
     }), [leads]);
 
     const addNiche = useCallback(() => {

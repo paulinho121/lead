@@ -68,11 +68,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   const stats = useMemo(() => {
-    const total = totalLeadCount || leads.length;
-    const enriched = globalStats?.enriched ?? leads.filter(l => l.status === 'enriched').length;
-    const pending = globalStats?.pending ?? leads.filter(l => l.status === 'pending' || l.status === 'processing').length;
-    const failed = globalStats?.failed ?? leads.filter(l => l.status === 'failed').length;
-    const hasContact = globalStats?.hasContact ?? leads.filter(l => l.email || l.telefone).length;
+    const activeLeads = leads.filter(l => l.stage !== 'disqualified');
+    const total = totalLeadCount || activeLeads.length;
+    const enriched = globalStats?.enriched ?? activeLeads.filter(l => l.status === 'enriched').length;
+    const pending = globalStats?.pending ?? activeLeads.filter(l => l.status === 'pending' || l.status === 'processing').length;
+    const failed = globalStats?.failed ?? activeLeads.filter(l => l.status === 'failed').length;
+    const hasContact = globalStats?.hasContact ?? activeLeads.filter(l => l.email || l.telefone).length;
 
     const statusData = [
       { name: 'Enriquecidos', value: enriched, color: '#00A38E' },
@@ -80,8 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       { name: 'Pendentes', value: pending, color: '#f59e0b' },
     ];
 
-    const stateData = externalStateData || leads.reduce((acc: any[], lead) => {
-      // ... same logic
+    const stateData = externalStateData || activeLeads.reduce((acc: any[], lead) => {
       if (!lead.uf) return acc;
       const existing = acc.find(a => a.name === lead.uf);
       if (existing) existing.value += 1;
@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       return acc;
     }, []).sort((a, b) => b.contacted - a.contacted);
 
-    const sourceConversionData = leads.reduce((acc: any[], lead) => {
+    const sourceConversionData = activeLeads.reduce((acc: any[], lead) => {
       const source = lead.source || 'Manual';
       const existing = acc.find(a => a.name === source);
       if (existing) {
@@ -131,12 +131,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       return acc;
     }, []).map(s => ({ ...s, rate: Math.round((s.won / s.total) * 100) }));
 
-    const tasks = leads
+    const tasks = activeLeads
       .filter(l => l.nextContactDate && new Date(l.nextContactDate) >= new Date(new Date().setHours(0, 0, 0, 0)))
       .sort((a, b) => new Date(a.nextContactDate!).getTime() - new Date(b.nextContactDate!).getTime())
       .slice(0, 5);
 
-    const hotLeads = leads
+    const hotLeads = activeLeads
       .filter(l => l.leadScore && l.leadScore >= 8 && l.stage !== 'closed_won' && l.stage !== 'closed_lost')
       .sort((a, b) => (b.leadScore || 0) - (a.leadScore || 0))
       .slice(0, 5);

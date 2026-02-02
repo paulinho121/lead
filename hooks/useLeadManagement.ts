@@ -3,6 +3,7 @@ import { Lead } from '../types';
 
 export const isLeadFullyManaged = (l: Lead): boolean => {
     if (l.status !== 'enriched') return true; // Somente leads enriquecidos precisam de gestão completa
+    if (l.stage === 'disqualified') return true; // Leads desqualificados já estão concluídos
 
     const hasInsta = !!l.instagram && l.instagram.trim() !== '';
     const hasFace = !!l.facebook && l.facebook.trim() !== '';

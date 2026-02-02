@@ -28,7 +28,8 @@ const STAGE_OPTIONS = [
     { id: 'presentation', label: 'Apresentação', color: 'purple' },
     { id: 'negotiation', label: 'Negociação', color: 'amber' },
     { id: 'closed_won', label: 'Fechado (Ganho)', color: 'emerald' },
-    { id: 'closed_lost', label: 'Arquivado (Perdido)', color: 'red' }
+    { id: 'closed_lost', label: 'Arquivado (Perdido)', color: 'red' },
+    { id: 'disqualified', label: 'DESQUALIFICADO (Fora de Nicho)', color: 'slate' }
 ];
 
 const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValues, setEditValues, handleSave }) => {
@@ -132,15 +133,16 @@ const LeadEditDrawer: React.FC<LeadEditDrawerProps> = ({ lead, onClose, editValu
                             </select>
                         </section>
 
-                        {editValues.stage === 'closed_lost' && (
+                        {(editValues.stage === 'closed_lost' || editValues.stage === 'disqualified') && (
                             <section className="animate-in slide-in-from-top-2 duration-300">
                                 <label className="text-[10px] font-black uppercase text-red-500 mb-2 block px-1 tracking-widest">Motivo da Perda (Obrigatório)</label>
                                 <select
                                     className="w-full p-4 bg-red-50 border-2 border-red-100 rounded-2xl text-sm font-bold focus:border-red-500 outline-none transition-all"
-                                    value={editValues.lostReason || ''}
+                                    value={editValues.lostReason || (editValues.stage === 'disqualified' ? 'Fora de Nicho / Desqualificado' : '')}
                                     onChange={e => setEditValues({ ...editValues, lostReason: e.target.value })}
                                 >
                                     <option value="">Selecione o motivo...</option>
+                                    <option value="Fora de Nicho / Desqualificado">Fora de Nicho / Desqualificado</option>
                                     <option value="Preço / Orçamento Alto">Preço / Orçamento Alto</option>
                                     <option value="Sem Perfil / CNAE Errado">Sem Perfil / CNAE Errado</option>
                                     <option value="Fechou com Concorrência">Fechou com Concorrência</option>

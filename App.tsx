@@ -17,7 +17,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
 import { isLeadFullyManaged } from './hooks/useLeadManagement';
-import Mural from './components/Mural.tsx';
+import Mural from './components/Mural';
 import TeamChat from './components/TeamChat';
 import ThemeSelector, { THEMES } from './components/ThemeSelector';
 import MeetingRoom from './components/MeetingRoom';
@@ -45,7 +45,15 @@ const App: React.FC = () => {
   });
   const [rankingLeads, setRankingLeads] = useState<any[]>([]);
   const [userTheme, setUserTheme] = useState(() => {
-    return localStorage.getItem('user-manto-theme') || 'default';
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('user-manto-theme') || 'default';
+      } catch (e) {
+        console.warn("localStorage access denied", e);
+        return 'default';
+      }
+    }
+    return 'default';
   });
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -119,7 +127,7 @@ const App: React.FC = () => {
 
   // Real-time profiles update
   useEffect(() => {
-    if (user) {
+    if (user && supabase) {
       const profileChannel = supabase
         .channel('profiles_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
@@ -227,6 +235,12 @@ const App: React.FC = () => {
     setIsEnriching(true);
 
     try {
+      if (!supabase) {
+        alert("Erro: Conexão com o banco de dados não configurada.");
+        setIsEnriching(false);
+        return;
+      }
+
       // 1. Busca leads que precisam de atenção diretamente no banco
       const { data: remoteLeads, error } = await supabase
         .from('leads')
@@ -304,6 +318,11 @@ const App: React.FC = () => {
       };
 
       await leadService.upsertLeads([leadToSave]);
+
+      if (updatedLead.stage === 'disqualified') {
+        alert("Lead desqualificado com sucesso! Ele foi removido das suas listas e você já pode solicitar um novo lead para substituí-lo.");
+      }
+
       loadStats();
       loadRanking();
       loadDashboardData();
@@ -316,7 +335,7 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     if (user) await leadService.setOffline(user.id);
-    await supabase?.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
   };
 
   const handleRequestLeads = async (uf?: string) => {

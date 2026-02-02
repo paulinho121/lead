@@ -30,6 +30,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
     useEffect(() => {
         loadAdminData();
 
+        if (!supabase) return;
+
         // Real-time updates
         const channel = supabase
             .channel('admin_realtime_leads')
@@ -39,7 +41,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            if (supabase) supabase.removeChannel(channel);
         };
     }, []);
 
@@ -407,8 +409,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                                 {profiles.find(p => p.id === lead.userId)?.fullname || 'Desconhecido'}
                                             </td>
                                             <td className="px-8 py-5">
-                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${lead.stage === 'closed_lost' ? 'bg-red-100 text-red-600' : lead.stage === 'closed_won' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
-                                                    {lead.stage === 'closed_lost' ? lead.lostReason || 'PERDIDO' : lead.stage || 'ATIVO'}
+                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${lead.stage === 'closed_lost' ? 'bg-red-100 text-red-600' : lead.stage === 'closed_won' ? 'bg-emerald-100 text-emerald-600' : lead.stage === 'disqualified' ? 'bg-slate-200 text-slate-700' : 'bg-blue-100 text-blue-600'}`}>
+                                                    {lead.stage === 'closed_lost' ? lead.lostReason || 'PERDIDO' : lead.stage === 'disqualified' ? 'DESQUALIFICADO' : lead.stage || 'ATIVO'}
                                                 </span>
                                             </td>
                                             <td className="px-8 py-5 text-right">

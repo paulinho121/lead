@@ -33,6 +33,8 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
     const onlineCount = chatUsers.filter(p => p.online_status).length;
 
     useEffect(() => {
+        if (!supabase || !currentUser) return;
+
         // Subscribe to real-time messages for ALL users to catch notifications
         const channel = supabase
             .channel(`notifications_${currentUser.id}`)
@@ -70,14 +72,14 @@ const TeamChat: React.FC<TeamChatProps> = ({ currentUser, profiles }) => {
             .subscribe();
 
         // Request notification permission
-        if (Notification.permission === 'default') {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
 
         return () => {
-            supabase.removeChannel(channel);
+            if (supabase) supabase.removeChannel(channel);
         };
-    }, [selectedUser, isOpen]);
+    }, [selectedUser, isOpen, currentUser]);
 
     useEffect(() => {
         if (selectedUser && isOpen) {

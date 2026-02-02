@@ -55,8 +55,9 @@ const LeadList: React.FC<LeadListProps> = ({ leads, loading, onLoadMore, hasMore
       (l.atividadePrincipal && l.atividadePrincipal.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesState = !selectedState || l.uf === selectedState;
+    const isDisqualified = l.stage === 'disqualified';
 
-    return matchesSearch && matchesState;
+    return matchesSearch && matchesState && !isDisqualified;
   });
 
   const exportCSV = () => {

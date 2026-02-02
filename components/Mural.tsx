@@ -17,6 +17,8 @@ const Mural: React.FC<MuralProps> = ({ profiles }) => {
     useEffect(() => {
         loadData();
 
+        if (!supabase) return;
+
         // Real-time updates
         const channel = supabase
             .channel('mural_realtime_leads')
@@ -26,7 +28,7 @@ const Mural: React.FC<MuralProps> = ({ profiles }) => {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            if (supabase) supabase.removeChannel(channel);
         };
     }, []);
 
