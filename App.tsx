@@ -221,7 +221,9 @@ const App: React.FC = () => {
         .from('leads')
         .select('*')
         .or('status.eq.pending,status.eq.processing,status.eq.failed,and(status.eq.enriched,email.is.null)')
-        .neq('email_not_found', true) // Pega quem é null ou false (não tentado ou sucesso anterior)
+        .or('email_not_found.is.null,email_not_found.eq.false') // Garantia de pegar leads não tentados ou sem erro definitivo
+        .order('updated_at', { ascending: true })
+        .order('id', { ascending: true })
         .limit(100);
 
       if (error) throw error;
