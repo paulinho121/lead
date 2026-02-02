@@ -50,7 +50,7 @@ const App: React.FC = () => {
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 100;
   const [dashboardData, setDashboardData] = useState<{ stateStats: any[], salespersonStats: any[] }>({ stateStats: [], salespersonStats: [] });
 
   useEffect(() => {

@@ -83,7 +83,7 @@ const TopBar: React.FC<TopBarProps> = ({
                             </button>
                             <button
                                 onClick={processQueue}
-                                disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
+                                disabled={isEnriching}
                                 className="flex items-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] px-4 py-2.5 rounded-xl text-[10px] font-black hover:opacity-90 transition-all shadow-lg shadow-[var(--primary)]/20"
                             >
                                 {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}

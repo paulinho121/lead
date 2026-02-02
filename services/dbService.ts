@@ -33,27 +33,23 @@ export const leadService = {
                 { count: enriched },
                 { count: pending },
                 { count: failed },
-                { count: hasEmail },
-                { count: hasPhone },
+                { count: hasContact },
                 { count: unassigned }
             ] = await Promise.all([
                 supabase.from('leads').select('*', { count: 'exact', head: true }),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched'),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).not('email', 'is', null).neq('email', ''),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).not('telefone', 'is', null).neq('telefone', ''),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).or('email.neq."",telefone.neq.""').not('email', 'is', null),
                 supabase.from('leads').select('*', { count: 'exact', head: true }).is('user_id', null)
             ]);
-
-            const estimatedContacts = Math.max(hasEmail || 0, hasPhone || 0);
 
             return {
                 total: total || 0,
                 enriched: enriched || 0,
                 pending: pending || 0,
                 failed: failed || 0,
-                hasContact: estimatedContacts,
+                hasContact: hasContact || 0,
                 unassigned: unassigned || 0
             };
         } catch (error) {
