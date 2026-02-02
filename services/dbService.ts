@@ -276,6 +276,27 @@ export const leadService = {
         }
     },
 
+    async unassignAllLeads(): Promise<number> {
+        if (!supabase) return 0;
+        const { data, error } = await supabase
+            .from('leads')
+            .update({
+                user_id: null,
+                stage: 'lead',
+                contacted: false,
+                contact_response: null,
+                next_contact_date: null
+            })
+            .not('user_id', 'is', null)
+            .select();
+
+        if (error) {
+            console.error('Error unassigning leads:', error);
+            throw error;
+        }
+        return data?.length || 0;
+    },
+
     async releaseAdminLeads(adminId: string): Promise<number> {
         if (!supabase) return 0;
         const { data, error } = await supabase

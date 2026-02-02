@@ -320,13 +320,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                             </div>
 
                             <div className="space-y-4">
+                                <h4 className="font-bold text-slate-800">Limpeza de Carteiras</h4>
+                                <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                    Desvincula todos os leads de todos os vendedores (incluindo você), devolvendo-os para a fila master.
+                                </p>
+                                <button
+                                    onClick={async () => {
+                                        if (window.confirm('DESVINCULAR TODOS OS LEADS DE TODOS OS VENDEDORES? Eles voltarão para a fila central.')) {
+                                            const count = await leadService.unassignAllLeads();
+                                            alert(`${count} leads desvinculados com sucesso!`);
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    className="px-6 py-4 bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2"
+                                >
+                                    <Users size={16} /> DESVINCULAR TODOS OS LEADS
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
                                 <h4 className="font-bold text-slate-800">Reset Total da Operação</h4>
                                 <p className="text-sm text-slate-500 leading-relaxed font-medium">
                                     Remove permanentemente todos os leads de todos os vendedores e do administrador.
                                 </p>
                                 <button
                                     onClick={async () => {
-                                        if (window.confirm('EXCLUIR TUDO?')) {
+                                        if (window.confirm('EXCLUIR TUDO? Esta ação não pode ser desfeita.')) {
                                             await leadService.clearAllLeads();
                                             window.location.reload();
                                         }
