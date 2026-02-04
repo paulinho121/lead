@@ -8,7 +8,7 @@ export const jinaService = {
         }
 
         try {
-            const response = await fetch(`https://r.jina.ai/${url}`, {
+            const response = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
