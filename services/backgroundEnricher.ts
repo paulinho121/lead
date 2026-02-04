@@ -1,5 +1,5 @@
 
-import { Lead } from '../types';
+import { Lead, Organization } from '../types';
 import { fetchCNPJData } from './enrichmentService';
 import { normalizeEmail, normalizePhone } from '../constants';
 import { parseUnstructuredText, discoverEmail, extractContactFromWeb, scoreLead } from './geminiService';
@@ -9,7 +9,8 @@ export const backgroundEnricher = {
     async processLeads(
         leadsToProcess: Lead[],
         onUpdate: (lead: Lead) => void,
-        onLog: (type: 'info' | 'error' | 'success', msg: string) => void
+        onLog: (type: 'info' | 'error' | 'success', msg: string) => void,
+        org?: Organization
     ) {
         onLog('info', `Iniciando processamento em lote de ${leadsToProcess.length} leads...`);
 
@@ -65,7 +66,7 @@ export const backgroundEnricher = {
                     }
 
                     const isInactive = data.situacao_cadastral?.includes('BAIXADA') || data.situacao_cadastral?.includes('INAPTA');
-                    const score = !isInactive ? await scoreLead(data) : 0;
+                    const score = !isInactive ? await scoreLead(data, org) : 0;
 
                     const enrichedLead: Lead = {
                         ...lead,

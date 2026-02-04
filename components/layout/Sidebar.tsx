@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Menu, X, Shield, Video, Download, Sparkles, Loader2, Users, Globe, Palette, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Shield, Video, Download, Sparkles, Loader2, Users, Globe, Palette, LayoutDashboard, Settings, Magnet } from 'lucide-react';
 import { AppTab, Lead } from '../../types';
 import { NAVIGATION } from '../../constants';
 import { THEMES } from '../ThemeSelector';
@@ -99,12 +99,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <nav className="flex-1 p-4 pb-20 space-y-1 overflow-y-auto custom-scrollbar">
                 {NAVIGATION.filter(item => {
-                    // Vendedores veem Dashboard, CRM, Mural e Estratégia
-                    // Captura (capture) agora é restrito apenas ao Administrador
+                    // Vendedores veem Dashboard, CRM, Mural, Estratégia e Captura
                     if (!isAdmin) {
-                        return item.id === 'dashboard' || item.id === 'crm' || item.id === 'mural' || item.id === 'strategy';
+                        return item.id === 'dashboard' || item.id === 'crm' || item.id === 'mural' || item.id === 'strategy' || item.id === 'capture';
                     }
-                    // Admin sees everything (including capture)
+                    // Admin sees everything
                     return true;
                 }).map(item => (
                     <button
@@ -127,22 +126,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </button>
                 ))}
 
-                {isAdmin && (
-                    <button
-                        onClick={() => { setActiveTab(AppTab.ADMIN); setIsMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.ADMIN
-                            ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20 scale-[1.02]'
-                            : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
-                            }`}
-                    >
-                        <span className={`shrink-0 ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}`}>
-                            <Shield size={20} />
-                        </span>
-                        <span className={`text-[10px] sm:text-xs text-left flex-1 tracking-wider leading-tight ${activeTab === AppTab.ADMIN ? 'text-[var(--text-on-primary)]' : 'font-black opacity-60 group-hover:opacity-100'}`}>
-                            PAINEL DIRETOR
-                        </span>
-                    </button>
-                )}
+                <div className="pt-4 pb-2 border-t border-[var(--border)] mt-4">
+                    <span className="px-4 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[3px] opacity-50">Configurações SaaS</span>
+                </div>
+
+                <button
+                    onClick={() => { setActiveTab(AppTab.SETTINGS); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${activeTab === AppTab.SETTINGS
+                        ? 'bg-[var(--primary)] text-[var(--text-on-primary)] font-black shadow-xl shadow-[var(--primary)]/20 scale-[1.02]'
+                        : 'text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:pl-5'
+                        }`}
+                >
+                    <span className={`shrink-0 ${activeTab === AppTab.SETTINGS ? 'text-[var(--text-on-primary)] scale-110' : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'}`}>
+                        <Settings size={20} />
+                    </span>
+                    <span className={`text-[10px] sm:text-xs text-left flex-1 tracking-wider leading-tight ${activeTab === AppTab.SETTINGS ? 'text-[var(--text-on-primary)]' : 'font-black opacity-60 group-hover:opacity-100'}`}>
+                        PERFIL DA EMPRESA
+                    </span>
+                </button>
 
                 <button
                     onClick={() => { setActiveTab(AppTab.REUNIAO); setIsMobileMenuOpen(false); }}

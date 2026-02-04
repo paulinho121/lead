@@ -1,15 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from './services/supabase';
-import { AppTab, Lead } from './types';
-import { NAVIGATION, COLORS } from './constants';
+import { AppTab, Lead, Organization } from './types';
 import Dashboard from './components/Dashboard';
 import LeadList from './components/LeadList';
 import Enricher from './components/Enricher';
 import Strategy from './components/Strategy';
 import CRM from './components/CRM';
-import { exportLeadsToCSV } from './services/exportService';
-import { Download, RefreshCw, Sparkles, Loader2, Users, Globe, Palette, Sun, Moon, Menu, X, Shield, Video } from 'lucide-react';
 import { leadService } from './services/dbService';
 import { backgroundEnricher } from './services/backgroundEnricher';
 import { Analytics } from "@vercel/analytics/react"
@@ -24,8 +21,8 @@ import MeetingRoom from './components/MeetingRoom';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 import AssociationScraper from './components/AssociationScraper';
+import OrganizationSettings from './components/OrganizationSettings';
 import { useAuth } from './hooks/useAuth';
-
 
 const App: React.FC = () => {
   const { user, isAuthenticated, isAdmin } = useAuth();
@@ -35,6 +32,7 @@ const App: React.FC = () => {
   const [isEnriching, setIsEnriching] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedRequestUF, setSelectedRequestUF] = useState<string>('');
@@ -87,22 +85,37 @@ const App: React.FC = () => {
   const [profiles, setProfiles] = useState<any[]>([]);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      leadService.syncProfile(user.id, user.email!, user.user_metadata?.fullname);
-      loadLeads(user);
-      loadStats();
-      loadAvailableStates();
-      loadProfiles(user);
-      loadRanking();
-      loadDashboardData();
-    } else if (!isAuthenticated) {
-      setLeads([]);
-      setProfiles([]);
-      setRankingLeads([]);
-    }
+    const initApp = async () => {
+      if (isAuthenticated && user) {
+        // 1. Sync and get LATEST profile from DB (crucial for organization_id)
+        await leadService.syncProfile(user.id, user.email!, user.user_metadata?.fullname);
+
+        // Fetch profiles to find the exact one for current user
+        const allProfiles = await leadService.getAllProfiles();
+        const myProfile = allProfiles.find(p => p.id === user.id);
+        const orgId = myProfile?.organization_id;
+
+        if (orgId) {
+          loadLeads({ ...user, organization_id: orgId });
+          loadStats(orgId);
+          loadAvailableStates(orgId);
+          loadRanking(orgId);
+          loadDashboardData(orgId);
+          loadOrganization(orgId);
+        } else if (isAdmin) {
+          // Se for admin mas não tiver org_id ainda (caso de migração)
+          loadLeads(user);
+        }
+      } else if (!isAuthenticated) {
+        setLeads([]);
+        setProfiles([]);
+        setRankingLeads([]);
+      }
+    };
+
+    initApp();
   }, [isAuthenticated, user]);
 
-  // Heartbeat for online status
   useEffect(() => {
     if (user) {
       leadService.updateHeartbeat(user.id);
@@ -126,7 +139,6 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Real-time profiles update
   useEffect(() => {
     if (user && supabase) {
       const profileChannel = supabase
@@ -139,10 +151,12 @@ const App: React.FC = () => {
       const leadChannel = supabase
         .channel('leads_realtime_dashboard')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
-          console.log('🔄 Dashboard Real-time change detected:', payload);
-          loadRanking();
-          loadStats();
-          loadDashboardData();
+          if (user.organization_id) {
+            const orgId = user.organization_id;
+            loadRanking(orgId);
+            loadStats(orgId);
+            loadDashboardData(orgId);
+          }
         })
         .subscribe();
 
@@ -167,18 +181,18 @@ const App: React.FC = () => {
     }
   };
 
-  const loadAvailableStates = async () => {
+  const loadAvailableStates = async (orgId: string) => {
     try {
-      const states = await leadService.getAvailableStates();
+      const states = await leadService.getAvailableStates(orgId);
       setAvailableStates(states);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const loadStats = async () => {
+  const loadStats = async (orgId: string) => {
     try {
-      const stats = await leadService.getStats();
+      const stats = await leadService.getStats(orgId);
       setTotalLeadCount(stats.total);
       setLeadStats(stats);
     } catch (error) {
@@ -186,19 +200,28 @@ const App: React.FC = () => {
     }
   };
 
-  const loadRanking = async () => {
+  const loadRanking = async (orgId: string) => {
     try {
-      const data = await leadService.getGlobalRanking();
+      const data = await leadService.getGlobalRanking(orgId);
       setRankingLeads(data);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (orgId: string) => {
     try {
-      const data = await leadService.getDashboardData();
+      const data = await leadService.getDashboardData(orgId);
       setDashboardData(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const loadOrganization = async (orgId: string) => {
+    try {
+      const data = await leadService.getOrganization(orgId);
+      setOrganization(data);
     } catch (e) {
       console.error(e);
     }
@@ -208,7 +231,12 @@ const App: React.FC = () => {
     if (page === 0) setIsLoading(true);
     try {
       const activeUser = currentUser || user;
-      const data = await leadService.getAllLeads(isAdmin ? undefined : activeUser?.id, page, PAGE_SIZE);
+      if (!activeUser?.organization_id && !isAdmin) {
+        setIsLoading(false);
+        return;
+      }
+      const orgId = activeUser.organization_id || "";
+      const data = await leadService.getAllLeads(orgId, isAdmin ? undefined : activeUser?.id, page, PAGE_SIZE);
 
       if (page === 0) {
         setLeads(data);
@@ -236,20 +264,17 @@ const App: React.FC = () => {
     setIsEnriching(true);
 
     try {
-      if (!supabase) {
-        alert("Erro: Conexão com o banco de dados não configurada.");
+      if (!supabase || !user?.organization_id) {
+        alert("Erro: Conexão ou perfil organizacional não detectado.");
         setIsEnriching(false);
         return;
       }
 
-      // 1. Busca leads que precisam de atenção diretamente no banco
       const { data: remoteLeads, error } = await supabase
         .from('leads')
         .select('*')
+        .eq('organization_id', user.organization_id)
         .or('status.eq.pending,status.eq.processing,status.eq.failed,and(status.eq.enriched,email.is.null)')
-        .or('email_not_found.is.null,email_not_found.eq.false') // Garantia de pegar leads não tentados ou sem erro definitivo
-        .order('updated_at', { ascending: true })
-        .order('id', { ascending: true })
         .limit(100);
 
       if (error) throw error;
@@ -257,12 +282,12 @@ const App: React.FC = () => {
       const pendingLeads = (remoteLeads || []).map(leadService.mapFromDb);
 
       if (pendingLeads.length === 0) {
-        alert("Nenhum lead disponível para enriquecimento no momento.");
+        alert("Nenhum lead disponível para enriquecimento.");
         setIsEnriching(false);
         return;
       }
 
-      if (!confirm(`Deseja iniciar o enriquecimento de ${pendingLeads.length} leads localizados na base de dados?`)) {
+      if (!confirm(`Deseja iniciar o enriquecimento de ${pendingLeads.length} leads?`)) {
         setIsEnriching(false);
         return;
       }
@@ -271,83 +296,73 @@ const App: React.FC = () => {
         pendingLeads,
         (updated) => {
           updateLead(updated);
-          loadStats(); // Re-fetch stats to update counters in real-time
         },
         (type, msg) => {
-          console.log(`[Enricher] ${type}: ${msg}`);
-          if (type === 'info' || type === 'success') {
-            setStatusMessage(msg);
-          }
-        }
+          setStatusMessage(msg);
+        },
+        organization || undefined
       );
+
       setStatusMessage('Fila concluída!');
     } catch (error) {
-      console.error("Erro no processamento da fila:", error);
+      console.error("Erro na fila:", error);
       setStatusMessage('Erro no processo');
     } finally {
       setTimeout(() => {
         setIsEnriching(false);
         setStatusMessage('');
       }, 2000);
-      loadLeads();
-      loadStats();
+      if (user?.organization_id) {
+        loadLeads(user);
+        loadStats(user.organization_id);
+      }
     }
   };
 
   const addLeads = async (newLeads: Lead[]) => {
     if (!user) return;
     try {
-      const leadsWithUser = newLeads.map(l => ({ ...l, userId: isAdmin ? null : user.id }));
+      const leadsWithUser = newLeads.map(l => ({
+        ...l,
+        userId: isAdmin ? null : user.id,
+        organizationId: user.organization_id
+      }));
       await leadService.upsertLeads(leadsWithUser);
-      await loadLeads();
-      await loadStats();
+      loadLeads(user);
+      if (user.organization_id) loadStats(user.organization_id);
     } catch (error) {
-      alert("Erro ao salvar novos leads no banco de dados.");
+      alert("Erro ao salvar novos leads.");
     }
   };
 
   const updateLead = async (updatedLead: Lead) => {
     if (!user) return;
     try {
-      // Atualiza localmente
       setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
-
-      // Sincroniza com banco - Atribui ao usuário logado se o lead estiver sem dono
       const leadToSave = {
         ...updatedLead,
-        userId: updatedLead.userId || user.id
+        userId: updatedLead.userId || user.id,
+        organizationId: updatedLead.organizationId || user.organization_id
       };
-
       await leadService.upsertLeads([leadToSave]);
-
-      if (updatedLead.stage === 'disqualified') {
-        alert("Lead desqualificado com sucesso! Ele foi removido das suas listas e você já pode solicitar um novo lead para substituí-lo.");
+      if (user.organization_id) {
+        loadStats(user.organization_id);
+        loadRanking(user.organization_id);
       }
-
-      loadStats();
-      loadRanking();
-      loadDashboardData();
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
-      loadLeads();
-      alert("Houve um erro ao sincronizar o lead com o servidor. A página foi atualizada.");
     }
   };
 
   const deleteLead = async (leadId: string) => {
     if (!user) return;
-    if (!confirm('Tem certeza que deseja excluir este lead permanentemente?')) return;
-
+    if (!confirm('Excluir este lead permanentemente?')) return;
     try {
       await leadService.deleteLead(leadId);
       setLeads(prev => prev.filter(l => l.id !== leadId));
-      loadStats();
-      loadRanking();
-      loadDashboardData();
-      alert("Lead excluído com sucesso! Ele foi removido permanentemente e você já pode solicitar um novo lead para substituí-lo.");
+      if (user.organization_id) loadStats(user.organization_id);
     } catch (error) {
-      console.error("Erro ao excluir lead:", error);
-      alert("Houve um erro ao excluir o lead.");
+      alert("Erro ao excluir lead.");
     }
   };
 
@@ -357,30 +372,14 @@ const App: React.FC = () => {
   };
 
   const handleRequestLeads = async (uf?: string) => {
-    if (!user) return;
-    const unmanagedLeads = leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l));
-
-    if (unmanagedLeads.length > 0) {
-      alert(`⚠️ Bloqueio de Segurança: Você possui ${unmanagedLeads.length} leads no seu CRM que ainda não foram totalmente geridos. Para liberar espaço e solicitar novos contatos, você deve concluir a gestão destes leads ou usar a opção 'Desqualificar' ou 'Excluir' naqueles que não se encaixam no seu perfil.`);
-      return;
-    }
-
+    if (!user || !user.organization_id) return;
     setIsLoading(true);
     try {
-      const beforeCount = leads.length;
       await leadService.requestNewLeads(user.id, uf);
-      const data = await leadService.getAllLeads(user.id);
-      setLeads(data);
-      await loadStats();
-      await loadAvailableStates();
-
-      if (data.length > beforeCount) {
-        alert(`Sucesso! ${data.length - beforeCount} novos leads${uf ? ` de ${uf}` : ''} foram atribuídos a você.`);
-      } else {
-        alert(`Não há leads disponíveis ${uf ? `para o estado ${uf} ` : ''}na fila central.`);
-      }
+      loadLeads(user);
+      loadStats(user.organization_id);
     } catch (error) {
-      alert(`Erro ao solicitar leads: ${error?.message || 'Serviço indisponível'}`);
+      alert(`Erro ao solicitar leads: ${error?.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -468,6 +467,12 @@ const App: React.FC = () => {
             )}
             {activeTab === AppTab.REUNIAO && (
               <MeetingRoom userEmail={user?.email || ''} userName={user?.user_metadata?.fullname || 'Vendedor'} />
+            )}
+            {activeTab === AppTab.SETTINGS && (
+              <OrganizationSettings
+                organization={organization}
+                onUpdate={(updated) => setOrganization(updated)}
+              />
             )}
           </div>
         </div>

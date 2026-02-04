@@ -29,6 +29,19 @@ export interface Lead {
   leadScore?: number;
   nextContactDate?: string;
   lostReason?: string;
+  organizationId?: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  niche: string; // Ex: Energia Solar, Fotografia, etc.
+  description: string;
+  toneOfVoice: string; // Ex: Profissional, Amigável, Técnico
+  brands?: string; // Marcas representadas
+  goal?: string; // Objetivo comercial
+  website?: string;
+  created_at?: string;
 }
 
 export interface Profile {
@@ -41,6 +54,7 @@ export interface Profile {
   role?: 'admin' | 'vendedor';
   target_leads?: number;
   theme?: string;
+  organization_id?: string;
 }
 
 export interface Message {
@@ -74,5 +88,6 @@ export enum AppTab {
   MURAL = 'mural',
   ADMIN = 'admin',
   REUNIAO = 'reuniao',
-  CAPTURE = 'capture'
+  CAPTURE = 'capture',
+  SETTINGS = 'settings'
 }

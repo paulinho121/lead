@@ -13,11 +13,14 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
     const [webUrl, setWebUrl] = useState('');
     const [instagramUrl, setInstagramUrl] = useState('');
     const [manualText, setManualText] = useState('');
+    const [scrapedText, setScrapedText] = useState('');
     const [mode, setMode] = useState<'url' | 'manual' | 'instagram'>('url');
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [error, setError] = useState('');
+    const [customNiche, setCustomNiche] = useState('');
+    const [keywords, setKeywords] = useState('');
 
     const handleCapture = async () => {
         const currentUrl = mode === 'url' ? webUrl : instagramUrl;
@@ -37,6 +40,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                     const markdown = await firecrawlService.scrapeUrl(webUrl);
                     if (!markdown) throw new Error('Não foi possível ler a URL. Tente o modo manual.');
                     textToProcess = markdown;
+                    setScrapedText(markdown);
                 } catch (scrapeErr: any) {
                     const isLimit = scrapeErr.message?.includes('402') || scrapeErr.message?.includes('limit');
                     if (isLimit) {
@@ -53,14 +57,18 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                 setStatus('Analisando perfil do Instagram...');
                 // Try to scrape profile
                 const profileMarkdown = await firecrawlService.scrapeUrl(instagramUrl);
+                if (profileMarkdown) setScrapedText(profileMarkdown);
 
                 setStatus('Identificando nicho e localidade...');
                 const profileInfo = await identifyNicheFromContent(profileMarkdown || instagramUrl);
-                const niche = (profileInfo as any)?.niche || instagramUrl.split('/').filter(Boolean).pop()?.replace(/[^a-zA-Z]/g, ' ') || 'Empresas similares';
+
+                // Use custom niche if provided, otherwise use AI detection
+                const detectedNiche = (profileInfo as any)?.niche || instagramUrl.split('/').filter(Boolean).pop()?.replace(/[^a-zA-Z]/g, ' ') || 'Empresas similares';
+                const niche = customNiche || detectedNiche;
                 const location = (profileInfo as any)?.location || '';
 
                 setStatus(`Buscando leads no nicho: ${niche}${location ? ` em ${location}` : ''}...`);
-                const searchQuery = location ? `${niche} em ${location}` : niche;
+                const searchQuery = `${keywords ? `${keywords} ` : ''}${niche}${location ? ` em ${location}` : ''}`;
                 const searchResults = await firecrawlService.searchByNiche(searchQuery);
 
                 if (searchResults.length === 0) {
@@ -171,8 +179,8 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                     ) : mode === 'instagram' ? (
                         <>
                             <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Link do Perfil do Instagram (Ex: Restaurante)</label>
-                            <div className="flex gap-3">
-                                <div className="relative flex-1 group">
+                            <div className="space-y-4">
+                                <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500">
                                         <Sparkles size={20} />
                                     </div>
@@ -184,16 +192,40 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                                         className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-pink-500 transition-all font-bold"
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Refinar Nicho (Opcional)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: Aluguel de Câmeras"
+                                            value={customNiche}
+                                            onChange={(e) => setCustomNiche(e.target.value)}
+                                            className="w-full px-4 py-3 bg-[var(--bg-main)]/30 border border-[var(--border)] rounded-xl focus:outline-none focus:border-pink-500/50 transition-all text-sm font-bold"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Palavras-Chave (Opcional)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: São Paulo, Cinema, Estúdio"
+                                            value={keywords}
+                                            onChange={(e) => setKeywords(e.target.value)}
+                                            className="w-full px-4 py-3 bg-[var(--bg-main)]/30 border border-[var(--border)] rounded-xl focus:outline-none focus:border-pink-500/50 transition-all text-sm font-bold"
+                                        />
+                                    </div>
+                                </div>
+
                                 <button
                                     onClick={handleCapture}
                                     disabled={isLoading || !instagramUrl}
-                                    className="bg-gradient-to-tr from-purple-600 to-pink-500 text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg"
+                                    className="w-full bg-gradient-to-tr from-purple-600 to-pink-500 text-white px-8 py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg"
                                 >
                                     {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
                                     DESCOBRIR LEADS
                                 </button>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-medium italic text-center">Nossa IA analisará o nicho deste perfil e buscará empresas similares em todo o Brasil.</p>
+                            <p className="text-[10px] text-slate-400 font-medium italic text-center">Nossa IA analisará o perfil e usará seus filtros para buscar empresas similares em todo o Brasil.</p>
                         </>
                     ) : (
                         <>
@@ -225,9 +257,33 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                         </div>
                     )}
                     {error && (
-                        <div className="flex items-center gap-2 text-red-500 text-xs font-bold px-1 py-2 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
-                            <AlertCircle size={14} />
-                            {error}
+                        <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-3 text-red-600">
+                                <AlertCircle size={20} />
+                                <p className="text-sm font-bold">{error}</p>
+                            </div>
+
+                            {scrapedText && (
+                                <div className="bg-white border border-red-200 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">Conteúdo capturado da página</span>
+                                        <button
+                                            onClick={() => {
+                                                setManualText(scrapedText);
+                                                setMode('manual');
+                                                setError('');
+                                                setScrapedText('');
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black hover:bg-slate-800 transition-all uppercase tracking-tighter"
+                                        >
+                                            <ArrowRight size={14} /> Usar no Modo Manual
+                                        </button>
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 font-mono line-clamp-3 bg-slate-50 p-2 rounded-lg border border-slate-100 italic">
+                                        {scrapedText.substring(0, 500)}...
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

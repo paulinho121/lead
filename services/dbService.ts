@@ -1,12 +1,13 @@
-import { Lead } from '../types';
+import { Lead, Organization } from '../types';
 import { supabase } from './supabase';
 
 export const leadService = {
-    async getAllLeads(userId?: string, page: number = 0, pageSize: number = 50): Promise<Lead[]> {
+    async getAllLeads(orgId: string, userId?: string, page: number = 0, pageSize: number = 50): Promise<Lead[]> {
         if (!supabase) return [];
         let query = supabase
             .from('leads')
             .select('*')
+            .eq('organization_id', orgId)
             .order('captured_at', { ascending: false })
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -24,7 +25,7 @@ export const leadService = {
         return (data || []).map(leadService.mapFromDb);
     },
 
-    async getStats(): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number, unassigned: number }> {
+    async getStats(orgId: string): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number, unassigned: number }> {
         if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 };
 
         try {
@@ -36,12 +37,12 @@ export const leadService = {
                 { count: hasContact },
                 { count: unassigned }
             ] = await Promise.all([
-                supabase.from('leads').select('*', { count: 'exact', head: true }),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'enriched'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).or('email.neq."",telefone.neq.""').not('email', 'is', null),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).is('user_id', null)
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'enriched'),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['pending', 'processing']),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'failed'),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).or('email.neq."",telefone.neq.""').not('email', 'is', null),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).is('user_id', null)
             ]);
 
             return {
@@ -58,7 +59,7 @@ export const leadService = {
         }
     },
 
-    async getDashboardData(): Promise<{ stateStats: any[], salespersonStats: any[] }> {
+    async getDashboardData(orgId: string): Promise<{ stateStats: any[], salespersonStats: any[] }> {
         if (!supabase) return { stateStats: [], salespersonStats: [] };
 
         // For charts, we fetch a significant sample (e.g., 2000 leads) to get meaningful distributions
@@ -66,6 +67,7 @@ export const leadService = {
         const { data, error } = await supabase
             .from('leads')
             .select('uf, user_id, contacted, email')
+            .eq('organization_id', orgId)
             .limit(5000);
 
         if (error) return { stateStats: [], salespersonStats: [] };
@@ -105,11 +107,12 @@ export const leadService = {
         return data || [];
     },
 
-    async getAvailableStates(): Promise<string[]> {
+    async getAvailableStates(orgId: string): Promise<string[]> {
         if (!supabase) return [];
         const { data, error } = await supabase
             .from('leads')
             .select('uf')
+            .eq('organization_id', orgId)
             .is('user_id', null)
             .not('uf', 'is', null)
             .neq('uf', '')
@@ -164,6 +167,25 @@ export const leadService = {
             .from('profiles')
             .update({ online_status: false })
             .eq('id', userId);
+    },
+
+    async getOrganization(orgId: string): Promise<Organization | null> {
+        if (!supabase) return null;
+        const { data, error } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', orgId)
+            .single();
+        if (error) return null;
+        return data;
+    },
+
+    async updateOrganization(org: Partial<Organization>): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('organizations')
+            .upsert(org);
+        if (error) throw error;
     },
 
     async getMessages(userId: string, targetId: string): Promise<any[]> {
@@ -231,12 +253,13 @@ export const leadService = {
         }
     },
 
-    async getGlobalRanking(): Promise<any[]> {
+    async getGlobalRanking(orgId: string): Promise<any[]> {
         if (!supabase) return [];
         // Busca todos os leads atribuídos que foram contatados
         const { data, error } = await supabase
             .from('leads')
             .select('user_id, contacted, email')
+            .eq('organization_id', orgId)
             .not('user_id', 'is', null);
 
         if (error) {
@@ -365,11 +388,9 @@ export const leadService = {
             website: lead.website,
             facebook: lead.facebook,
             email_not_found: lead.emailNotFound,
-            updated_at: new Date().toISOString(),
-            stage: lead.stage,
-            lead_score: lead.leadScore,
             next_contact_date: lead.nextContactDate,
-            lost_reason: lead.lostReason
+            lost_reason: lead.lostReason,
+            organization_id: lead.organizationId
         };
     },
 
@@ -402,7 +423,8 @@ export const leadService = {
             stage: dbLead.stage,
             leadScore: dbLead.lead_score,
             nextContactDate: dbLead.next_contact_date,
-            lostReason: dbLead.lost_reason
+            lostReason: dbLead.lost_reason,
+            organizationId: dbLead.organization_id
         };
     }
 };
