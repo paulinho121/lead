@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Building2, Save, Sparkles, MessageSquare, Target, ShieldCheck, Key, Zap, Globe, Cpu } from 'lucide-react';
+import { Building2, Save, Sparkles, MessageSquare, Target, ShieldCheck, Key, Zap, Globe, Cpu, RefreshCw } from 'lucide-react';
 import { Organization } from '../types';
 import { leadService } from '../services/dbService';
 
@@ -20,6 +20,7 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
         website: ''
     });
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavingKeys, setIsSavingKeys] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [apiKeys, setApiKeys] = useState<{ provider: string, api_key: string }[]>([]);
     const [isLoadingKeys, setIsLoadingKeys] = useState(false);
@@ -53,20 +54,31 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
         setIsSaving(true);
         try {
             await leadService.updateOrganization(formData);
-
-            // Save API Keys
-            for (const key of apiKeys) {
-                if (key.api_key && !key.api_key.includes('****')) {
-                    await leadService.saveOrganizationApiKey(organization!.id, key.provider, key.api_key);
-                }
-            }
-
             onUpdate(formData as Organization);
-            setMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
+            setMessage({ type: 'success', text: 'Perfil da empresa atualizado!' });
         } catch (error) {
-            setMessage({ type: 'error', text: 'Erro ao salvar configurações.' });
+            setMessage({ type: 'error', text: 'Erro ao salvar perfil.' });
         } finally {
             setIsSaving(false);
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        }
+    };
+
+    const handleSaveApiKeys = async () => {
+        if (!organization) return;
+        setIsSavingKeys(true);
+        try {
+            for (const key of apiKeys) {
+                if (key.api_key && !key.api_key.includes('****')) {
+                    await leadService.saveOrganizationApiKey(organization.id, key.provider, key.api_key);
+                }
+            }
+            setMessage({ type: 'success', text: 'Chaves de API salvas com sucesso!' });
+            loadApiKeys(organization.id);
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Erro ao salvar chaves.' });
+        } finally {
+            setIsSavingKeys(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
     };
@@ -182,9 +194,15 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
                                 <Key size={20} />
                                 <h3 className="font-black uppercase tracking-widest text-xs">Conectividade e APIs (BYOK)</h3>
                             </div>
-                            <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase">
-                                <Zap size={12} /> Alta Performance
-                            </div>
+                            <button
+                                type="button"
+                                onClick={handleSaveApiKeys}
+                                disabled={isSavingKeys}
+                                className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                            >
+                                {isSavingKeys ? <RefreshCw className="animate-spin" size={12} /> : <Zap size={12} />}
+                                SALVAR CHAVES
+                            </button>
                         </div>
 
                         <p className="text-sm text-[var(--text-muted)] font-medium mb-4">
