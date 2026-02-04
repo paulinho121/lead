@@ -111,18 +111,25 @@ async function handleParseText(model: any, text: string, mode?: string) {
 async function handleScrapeUrl(url: string) {
     const jinaKey = Deno.env.get('JINA_API_KEY');
 
+    // Ensure URL is absolute for Jina
+    const targetUrl = url.startsWith('http') ? url : `https://${url}`;
+
     if (jinaKey) {
         try {
-            const response = await fetch(`https://r.jina.ai/${url}`, {
+            console.log(`[Proxy] Trying Jina for: ${targetUrl}`);
+            const response = await fetch(`https://r.jina.ai/${targetUrl}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${jinaKey}`,
-                    'Accept': 'text/plain'
+                    'Accept': 'text/plain',
+                    'X-With-Generated-Alt': 'true' // Helpful for images
                 }
             });
             if (response.ok) {
                 const text = await response.text();
-                return { markdown: text };
+                if (text && text.length > 200) { // Ensure we actually got content
+                    return { markdown: text };
+                }
             }
         } catch (e) {
             console.error("Jina Scrape Error in Proxy:", e);

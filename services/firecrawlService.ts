@@ -1,5 +1,5 @@
 
-import { jinaService } from './jinaService';
+import { aiBridge } from './aiBridge';
 
 export interface FirecrawlResult {
     url: string;
@@ -37,8 +37,8 @@ export const firecrawlService = {
 
             const officialUrl = searchData.data[0].url;
 
-            // 2. Use Jina to scrape for better quality/cost
-            const markdown = await jinaService.scrapeUrl(officialUrl);
+            // 2. Use Proxy (Jina/Firecrawl Fallback)
+            const markdown = await this.scrapeUrl(officialUrl);
 
             return {
                 url: officialUrl,
@@ -53,33 +53,11 @@ export const firecrawlService = {
     },
 
     async scrapeUrl(url: string): Promise<string | null> {
-        // 1. Try Jina first (Cheaper/Better Markdown)
-        const jinaResult = await jinaService.scrapeUrl(url);
-        if (jinaResult) return jinaResult;
-
-        // 2. Fallback to Firecrawl if Jina fails
-        const apiKey = import.meta.env.VITE_FIRECRAWL_API_KEY;
-        if (!apiKey) return null;
-
         try {
-            const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    url,
-                    formats: ['markdown'],
-                    onlyMainContent: false
-                })
-            });
-
-            if (!response.ok) return null;
-            const data = await response.json();
-            return data.data?.markdown || null;
+            const res = await aiBridge.callAiFunction('scrapeUrl', { url });
+            return res.markdown || null;
         } catch (error) {
-            console.error("Firecrawl Extraction Error:", error);
+            console.error("Scrape Error via Proxy:", error);
             return null;
         }
     },
