@@ -177,14 +177,15 @@ export const leadService = {
             .eq('id', orgId)
             .single();
         if (error) return null;
-        return data;
+        return leadService.mapOrgFromDb(data);
     },
 
     async updateOrganization(org: Partial<Organization>): Promise<void> {
         if (!supabase) return;
+        const dbOrg = leadService.mapOrgToDb(org);
         const { error } = await supabase
             .from('organizations')
-            .upsert(org);
+            .upsert(dbOrg);
         if (error) throw error;
     },
 
@@ -425,6 +426,34 @@ export const leadService = {
             nextContactDate: dbLead.next_contact_date,
             lostReason: dbLead.lost_reason,
             organizationId: dbLead.organization_id
+        };
+    },
+
+    mapOrgToDb(org: Partial<Organization>) {
+        return {
+            id: org.id,
+            name: org.name,
+            niche: org.niche,
+            description: org.description,
+            tone_of_voice: org.toneOfVoice,
+            brands: org.brands,
+            goal: org.goal,
+            website: org.website,
+            updated_at: new Date().toISOString()
+        };
+    },
+
+    mapOrgFromDb(dbOrg: any): Organization {
+        return {
+            id: dbOrg.id,
+            name: dbOrg.name,
+            niche: dbOrg.niche,
+            description: dbOrg.description,
+            toneOfVoice: dbOrg.tone_of_voice,
+            brands: dbOrg.brands,
+            goal: dbOrg.goal,
+            website: dbOrg.website,
+            created_at: dbOrg.created_at
         };
     }
 };
