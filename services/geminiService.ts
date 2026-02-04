@@ -10,7 +10,7 @@ const getModel = (overrideKey?: string) => {
     return null;
   }
   const genAI = new GoogleGenerativeAI(key);
-  return genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 };
 
 async function callGemini(prompt: string, overrideKey?: string) {

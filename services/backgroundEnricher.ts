@@ -68,7 +68,7 @@ export const backgroundEnricher = {
 
                                 if ((scrap as any).markdown) {
                                     onLog('info', 'Extraindo contatos do conteúdo do site...');
-                                    const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown);
+                                    const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown, customGeminiKey);
                                     if (extra?.email) {
                                         email = extra.email;
                                         onLog('success', `E-mail encontrado via Scraping: ${email}`);

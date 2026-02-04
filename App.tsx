@@ -461,10 +461,13 @@ const App: React.FC = () => {
             {activeTab === AppTab.MURAL && <Mural profiles={profiles} />}
             {activeTab === AppTab.STRATEGY && <Strategy leads={leads} onUpdateLead={updateLead} profiles={profiles} />}
             {activeTab === AppTab.CAPTURE && (
-              <AssociationScraper onLeadsFound={(found) => {
-                addLeads(found as Lead[]);
-                setActiveTab(AppTab.ENRICH);
-              }} />
+              <AssociationScraper
+                organizationId={userProfile?.organization_id}
+                onLeadsFound={(found) => {
+                  addLeads(found as Lead[]);
+                  setActiveTab(AppTab.ENRICH);
+                }}
+              />
             )}
             {activeTab === AppTab.ADMIN && isAdmin && (
               <AdminDashboard

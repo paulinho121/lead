@@ -7,9 +7,10 @@ import { Lead } from '../types';
 
 interface AssociationScraperProps {
     onLeadsFound: (leads: Partial<Lead>[]) => void;
+    organizationId?: string;
 }
 
-const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound }) => {
+const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound, organizationId }) => {
     const [webUrl, setWebUrl] = useState('');
     const [instagramUrl, setInstagramUrl] = useState('');
     const [manualText, setManualText] = useState('');
@@ -30,6 +31,21 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
         setIsLoading(true);
         setError('');
         setResults([]);
+
+        let customKey: string | undefined;
+        if (organizationId) {
+            try {
+                const { data } = await (await import('../services/supabase')).supabase
+                    .from('organization_api_keys')
+                    .select('api_key')
+                    .eq('organization_id', organizationId)
+                    .eq('provider', 'gemini')
+                    .single();
+                if (data?.api_key) customKey = data.api_key;
+            } catch (e) {
+                console.warn("Usando chave padrão para captura.");
+            }
+        }
 
         try {
             let textToProcess = manualText;
@@ -60,7 +76,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                 if (profileMarkdown) setScrapedText(profileMarkdown);
 
                 setStatus('Identificando nicho e localidade...');
-                const profileInfo = await identifyNicheFromContent(profileMarkdown || instagramUrl);
+                const profileInfo = await identifyNicheFromContent(profileMarkdown || instagramUrl, customKey);
 
                 // Use custom niche if provided, otherwise use AI detection
                 const detectedNiche = (profileInfo as any)?.niche || instagramUrl.split('/').filter(Boolean).pop()?.replace(/[^a-zA-Z]/g, ' ') || 'Empresas similares';
@@ -76,7 +92,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                 }
 
                 setStatus('IA formatando leads encontrados...');
-                const extracted = await extractLeadsFromText(JSON.stringify(searchResults));
+                const extracted = await extractLeadsFromText(JSON.stringify(searchResults), customKey);
                 setResults(extracted);
                 setStatus(`Sucesso! ${extracted.length} leads relacionados ao perfil encontrados.`);
                 setIsLoading(false);
@@ -84,7 +100,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
             }
 
             setStatus('IA extraindo nomes de empresas...');
-            const foundLeads = await extractLeadsFromText(textToProcess);
+            const foundLeads = await extractLeadsFromText(textToProcess, customKey);
 
             if (!foundLeads || foundLeads.length === 0) {
                 throw new Error('A IA não conseguiu identificar empresas. Tente copiar e colar o texto manualmente.');
