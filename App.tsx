@@ -92,6 +92,8 @@ const App: React.FC = () => {
 
         // Fetch profiles to find the exact one for current user
         const allProfiles = await leadService.getAllProfiles();
+        setProfiles(allProfiles); // <-- THIS WAS MISSING
+
         const myProfile = allProfiles.find(p => p.id === user.id);
         const orgId = myProfile?.organization_id;
 
@@ -102,6 +104,7 @@ const App: React.FC = () => {
           loadRanking(orgId);
           loadDashboardData(orgId);
           loadOrganization(orgId);
+          if (myProfile?.theme) setUserTheme(myProfile.theme);
         } else if (isAdmin) {
           // Se for admin mas não tiver org_id ainda (caso de migração)
           loadLeads(user);
