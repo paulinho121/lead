@@ -58,3 +58,13 @@ export const extractLeadsFromText = async (text: string) => {
   }
 };
 
+export const identifyNicheFromContent = async (text: string) => {
+  try {
+    const res = await aiBridge.callAiFunction('identifyNiche', { text });
+    return res.niche || null;
+  } catch (error) {
+    console.error("Gemini Proxy Niche Error:", error);
+    return null;
+  }
+};
+

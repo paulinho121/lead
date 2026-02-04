@@ -1,4 +1,6 @@
 
+import { jinaService } from './jinaService';
+
 export interface FirecrawlResult {
     url: string;
     email?: string;
@@ -35,32 +37,13 @@ export const firecrawlService = {
 
             const officialUrl = searchData.data[0].url;
 
-            // 2. Scrape the official website to extract info
-            const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    url: officialUrl,
-                    formats: ['markdown'],
-                    onlyMainContent: true
-                })
-            });
-
-            if (!scrapeResponse.ok) return { url: officialUrl };
-            const scrapeData = await scrapeResponse.json();
-
-            // Here you could use Gemini to extract email from the markdown or use Firecrawl's extract (if available)
-            // Firecrawl also has an 'extract' feature but it requires a schema.
+            // 2. Use Jina to scrape for better quality/cost
+            const markdown = await jinaService.scrapeUrl(officialUrl);
 
             return {
                 url: officialUrl,
                 website: officialUrl,
-                // The markdown content will be in scrapeData.data.markdown
-                // We'll return the markdown so the backgroundEnricher can pass it to Gemini
-                markdown: scrapeData.data?.markdown
+                markdown: markdown
             } as any;
 
         } catch (error) {
@@ -70,13 +53,36 @@ export const firecrawlService = {
     },
 
     async scrapeUrl(url: string): Promise<string | null> {
+        return jinaService.scrapeUrl(url);
+    },
+
+    async searchByNiche(query: string): Promise<any[]> {
+        const apiKey = import.meta.env.VITE_FIRECRAWL_API_KEY;
+        if (!apiKey) {
+            console.warn("Firecrawl API Key missing");
+            return [];
+        }
+
         try {
-            const { aiBridge } = await import('./aiBridge');
-            const res = await aiBridge.callAiFunction('scrapeUrl', { url });
-            return res.markdown || null;
+            const response = await fetch('https://api.firecrawl.dev/v1/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    query: `${query} empresas brasil`,
+                    limit: 15,
+                    lang: 'pt'
+                })
+            });
+
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.data || [];
         } catch (error) {
-            console.error("Firecrawl Scrape Error:", error);
-            return null;
+            console.error("Firecrawl Search Error:", error);
+            return [];
         }
     }
 };

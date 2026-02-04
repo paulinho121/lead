@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Magnet, Search, Loader2, Sparkles, CheckCircle2, AlertCircle, Plus, ArrowRight } from 'lucide-react';
 import { firecrawlService } from '../services/firecrawlService';
-import { extractLeadsFromText } from '../services/geminiService';
+import { extractLeadsFromText, identifyNicheFromContent } from '../services/geminiService';
 import { Lead } from '../types';
 
 interface AssociationScraperProps {
@@ -12,14 +12,16 @@ interface AssociationScraperProps {
 const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound }) => {
     const [url, setUrl] = useState('');
     const [manualText, setManualText] = useState('');
-    const [isManual, setIsManual] = useState(false);
+    const [mode, setMode] = useState<'url' | 'manual' | 'instagram'>('url');
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [error, setError] = useState('');
 
     const handleCapture = async () => {
-        if (!url && !manualText) return;
+        if (!url && !manualText && mode !== 'instagram') return;
+        if (mode === 'instagram' && !url) return;
+
         setIsLoading(true);
         setError('');
         setResults([]);
@@ -27,7 +29,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
         try {
             let textToProcess = manualText;
 
-            if (!isManual && url) {
+            if (mode === 'url' && url) {
                 setStatus('Lendo conteúdo da página...');
                 try {
                     const markdown = await firecrawlService.scrapeUrl(url);
@@ -37,12 +39,36 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                     const isLimit = scrapeErr.message?.includes('402') || scrapeErr.message?.includes('limit');
                     if (isLimit) {
                         setError('Limite do Firecrawl atingido. Mudando para modo manual...');
-                        setIsManual(true);
+                        setMode('manual');
                         setIsLoading(false);
                         return;
                     }
                     throw scrapeErr;
                 }
+            }
+
+            if (mode === 'instagram') {
+                setStatus('Analisando perfil do Instagram...');
+                // Try to scrape profile
+                const profileMarkdown = await firecrawlService.scrapeUrl(url);
+
+                setStatus('Identificando nicho e localidade...');
+                const profileInfo = await identifyNicheFromContent(profileMarkdown || url);
+                const niche = profileInfo || 'Empresas similares';
+
+                setStatus(`Buscando leads no nicho: ${niche}...`);
+                const searchResults = await firecrawlService.searchByNiche(niche);
+
+                if (searchResults.length === 0) {
+                    throw new Error('Não encontramos leads similares para este nicho no momento.');
+                }
+
+                setStatus('IA formatando leads encontrados...');
+                const extracted = await extractLeadsFromText(JSON.stringify(searchResults));
+                setResults(extracted);
+                setStatus(`Sucesso! ${extracted.length} leads relacionados ao perfil encontrados.`);
+                setIsLoading(false);
+                return;
             }
 
             setStatus('IA extraindo nomes de empresas...');
@@ -67,7 +93,7 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
             razaoSocial: r.razaoSocial || r.name,
             website: r.website || r.url,
             status: 'pending' as const,
-            source: `Web Capture: ${url}`,
+            source: mode === 'instagram' ? `Instagram Discovery: ${url}` : `Web Capture: ${url}`,
             cnpj: 'Pendente' // We'll need background enricher to find this
         }));
         onLeadsFound(formattedLeads);
@@ -90,23 +116,29 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
             </header>
 
             <div className="bg-[var(--bg-card)] rounded-[32px] p-8 shadow-xl border border-[var(--border)] glass-morphism space-y-6">
-                <div className="flex justify-center gap-4 mb-2">
+                <div className="flex flex-wrap justify-center gap-4 mb-2">
                     <button
-                        onClick={() => setIsManual(false)}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isManual ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                        onClick={() => setMode('url')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'url' ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
                     >
                         Captura via URL
                     </button>
                     <button
-                        onClick={() => setIsManual(true)}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isManual ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                        onClick={() => setMode('instagram')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'instagram' ? 'bg-gradient-to-tr from-purple-600 to-pink-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                    >
+                        Instagram Discovery
+                    </button>
+                    <button
+                        onClick={() => setMode('manual')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'manual' ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
                     >
                         Captura Manual (Texto)
                     </button>
                 </div>
 
                 <div className="max-w-3xl mx-auto space-y-4">
-                    {!isManual ? (
+                    {mode === 'url' ? (
                         <>
                             <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">URL da Associação ou Lista</label>
                             <div className="flex gap-3">
@@ -129,6 +161,33 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                                     CAPTURAR
                                 </button>
                             </div>
+                        </>
+                    ) : mode === 'instagram' ? (
+                        <>
+                            <label className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Link do Perfil do Instagram (Ex: Restaurante)</label>
+                            <div className="flex gap-3">
+                                <div className="relative flex-1 group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500">
+                                        <Sparkles size={20} />
+                                    </div>
+                                    <input
+                                        type="url"
+                                        placeholder="https://instagram.com/perfil_exemplo"
+                                        value={url}
+                                        onChange={(e) => setUrl(e.target.value)}
+                                        className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-pink-500 transition-all font-bold"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleCapture}
+                                    disabled={isLoading || !url}
+                                    className="bg-gradient-to-tr from-purple-600 to-pink-500 text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg"
+                                >
+                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                                    DESCOBRIR LEADS
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-medium italic text-center">Nossa IA analisará o nicho deste perfil e buscará empresas similares em todo o Brasil.</p>
                         </>
                     ) : (
                         <>

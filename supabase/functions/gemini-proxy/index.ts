@@ -67,6 +67,9 @@ serve(async (req) => {
             case 'scrapeUrl':
                 result = await handleScrapeUrl(payload.url);
                 break;
+            case 'identifyNiche':
+                result = await handleIdentifyNiche(model, payload.text);
+                break;
             default:
                 throw new Error('Unknown action: ' + action);
         }
@@ -88,9 +91,16 @@ serve(async (req) => {
 async function handleParseText(model: any, text: string, mode?: string) {
     const isDiscovery = mode === 'discovery';
     const prompt = isDiscovery
-        ? `Extraia uma lista de EMPRESAS do seguinte texto (geralmente uma lista de associados ou catálogo). 
-           Identifique a Razão Social/Nome e o Website (se houver). 
-           Retorne APENAS um array JSON de objetos: [{"razaoSocial": "...", "website": "..."}].
+        ? `Você é um robô de prospecção B2B inteligente. Sua tarefa é extrair uma LISTA DE EMPRESAS (Razão Social ou Nome Fantasia) do texto bruto fornecido.
+           
+           Instruções Críticas:
+           1. O texto pode ser uma lista de associados, um catálogo ou apenas nomes soltos de empresas.
+           2. Identifique o Nome da Empresa e o Website/URL (se houver).
+           3. Se o texto contiver apenas um ou dois nomes, extraia-os como empresas.
+           4. Ignore termos comuns de navegação (Home, Contato, etc).
+           5. Retorne APENAS um array JSON: [{"razaoSocial": "...", "website": "..."}].
+           6. Se não encontrar nada que pareça uma empresa, retorne [].
+           
            Texto: ${text.substring(0, 30000)}`
         : `Extraia informações de empresas brasileiras (especialmente CNPJ, Email e Telefone) do seguinte texto. Retorne APENAS um array JSON. Texto: ${text.substring(0, 30000)}`;
 
@@ -99,8 +109,29 @@ async function handleParseText(model: any, text: string, mode?: string) {
 }
 
 async function handleScrapeUrl(url: string) {
+    const jinaKey = Deno.env.get('JINA_API_KEY');
+
+    if (jinaKey) {
+        try {
+            const response = await fetch(`https://r.jina.ai/${url}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${jinaKey}`,
+                    'Accept': 'text/plain'
+                }
+            });
+            if (response.ok) {
+                const text = await response.text();
+                return { markdown: text };
+            }
+        } catch (e) {
+            console.error("Jina Scrape Error in Proxy:", e);
+        }
+    }
+
+    // Fallback to Firecrawl
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!firecrawlKey) throw new Error('FIRECRAWL_API_KEY not set');
+    if (!firecrawlKey) throw new Error('Neither JINA balance nor FIRECRAWL key found');
 
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
@@ -112,13 +143,13 @@ async function handleScrapeUrl(url: string) {
             url,
             formats: ['markdown'],
             onlyMainContent: false,
-            waitFor: 3000 // Give some time for lists to render
+            waitFor: 3000
         })
     });
 
     if (!response.ok) {
         const err = await response.text();
-        throw new Error(`Firecrawl Error: ${response.status} - ${err}`);
+        throw new Error(`Scrape Error: ${response.status} - ${err}`);
     }
 
     const data = await response.json();
@@ -232,4 +263,15 @@ async function handleFetchCompanyData(cnpj: string) {
         console.error("Error in handleFetchCompanyData:", error);
         return null;
     }
+}
+
+async function handleIdentifyNiche(model: any, text: string) {
+    const prompt = `Analise o seguinte conteúdo de perfil (pode ser de Instagram, LinkedIn ou site) e identifique o NICHO de mercado e a LOCALIDADE (Cidade/Estado) se houver.
+    
+    Retorne APENAS um JSON: {"niche": "...", "location": "..."}.
+    
+    Texto: ${text.substring(0, 5000)}`;
+
+    const res = await model.generateContent(prompt);
+    return safeJsonParse(res.response.text());
 }
