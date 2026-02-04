@@ -10,7 +10,8 @@ interface AssociationScraperProps {
 }
 
 const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound }) => {
-    const [url, setUrl] = useState('');
+    const [webUrl, setWebUrl] = useState('');
+    const [instagramUrl, setInstagramUrl] = useState('');
     const [manualText, setManualText] = useState('');
     const [mode, setMode] = useState<'url' | 'manual' | 'instagram'>('url');
     const [isLoading, setIsLoading] = useState(false);
@@ -19,8 +20,9 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
     const [error, setError] = useState('');
 
     const handleCapture = async () => {
-        if (!url && !manualText && mode !== 'instagram') return;
-        if (mode === 'instagram' && !url) return;
+        const currentUrl = mode === 'url' ? webUrl : instagramUrl;
+        if (!currentUrl && !manualText && mode !== 'instagram') return;
+        if (mode === 'instagram' && !currentUrl) return;
 
         setIsLoading(true);
         setError('');
@@ -29,10 +31,10 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
         try {
             let textToProcess = manualText;
 
-            if (mode === 'url' && url) {
+            if (mode === 'url' && webUrl) {
                 setStatus('Lendo conteúdo da página...');
                 try {
-                    const markdown = await firecrawlService.scrapeUrl(url);
+                    const markdown = await firecrawlService.scrapeUrl(webUrl);
                     if (!markdown) throw new Error('Não foi possível ler a URL. Tente o modo manual.');
                     textToProcess = markdown;
                 } catch (scrapeErr: any) {
@@ -50,14 +52,16 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
             if (mode === 'instagram') {
                 setStatus('Analisando perfil do Instagram...');
                 // Try to scrape profile
-                const profileMarkdown = await firecrawlService.scrapeUrl(url);
+                const profileMarkdown = await firecrawlService.scrapeUrl(instagramUrl);
 
                 setStatus('Identificando nicho e localidade...');
-                const profileInfo = await identifyNicheFromContent(profileMarkdown || url);
-                const niche = profileInfo || 'Empresas similares';
+                const profileInfo = await identifyNicheFromContent(profileMarkdown || instagramUrl);
+                const niche = (profileInfo as any)?.niche || instagramUrl.split('/').filter(Boolean).pop()?.replace(/[^a-zA-Z]/g, ' ') || 'Empresas similares';
+                const location = (profileInfo as any)?.location || '';
 
-                setStatus(`Buscando leads no nicho: ${niche}...`);
-                const searchResults = await firecrawlService.searchByNiche(niche);
+                setStatus(`Buscando leads no nicho: ${niche}${location ? ` em ${location}` : ''}...`);
+                const searchQuery = location ? `${niche} em ${location}` : niche;
+                const searchResults = await firecrawlService.searchByNiche(searchQuery);
 
                 if (searchResults.length === 0) {
                     throw new Error('Não encontramos leads similares para este nicho no momento.');
@@ -89,16 +93,18 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
     };
 
     const importLeads = () => {
+        const currentUrl = mode === 'url' ? webUrl : instagramUrl;
         const formattedLeads = results.map(r => ({
             razaoSocial: r.razaoSocial || r.name,
             website: r.website || r.url,
             status: 'pending' as const,
-            source: mode === 'instagram' ? `Instagram Discovery: ${url}` : `Web Capture: ${url}`,
+            source: mode === 'instagram' ? `Instagram Discovery: ${instagramUrl}` : `Web Capture: ${webUrl}`,
             cnpj: 'Pendente' // We'll need background enricher to find this
         }));
         onLeadsFound(formattedLeads);
         setResults([]);
-        setUrl('');
+        if (mode === 'url') setWebUrl('');
+        else setInstagramUrl('');
         setStatus('Leads enviados para a fila de enriquecimento!');
     };
 
@@ -147,14 +153,14 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                                     <input
                                         type="url"
                                         placeholder="https://exemplo.com.br/associados"
-                                        value={url}
-                                        onChange={(e) => setUrl(e.target.value)}
+                                        value={webUrl}
+                                        onChange={(e) => setWebUrl(e.target.value)}
                                         className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-all font-bold"
                                     />
                                 </div>
                                 <button
                                     onClick={handleCapture}
-                                    disabled={isLoading || !url}
+                                    disabled={isLoading || !webUrl}
                                     className="bg-[var(--primary)] text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg shadow-[var(--primary)]/20"
                                 >
                                     {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Magnet size={18} />}
@@ -173,14 +179,14 @@ const AssociationScraper: React.FC<AssociationScraperProps> = ({ onLeadsFound })
                                     <input
                                         type="url"
                                         placeholder="https://instagram.com/perfil_exemplo"
-                                        value={url}
-                                        onChange={(e) => setUrl(e.target.value)}
+                                        value={instagramUrl}
+                                        onChange={(e) => setInstagramUrl(e.target.value)}
                                         className="w-full pl-12 pr-6 py-4 bg-[var(--bg-main)]/50 border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-pink-500 transition-all font-bold"
                                     />
                                 </div>
                                 <button
                                     onClick={handleCapture}
-                                    disabled={isLoading || !url}
+                                    disabled={isLoading || !instagramUrl}
                                     className="bg-gradient-to-tr from-purple-600 to-pink-500 text-white px-8 py-4 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-lg"
                                 >
                                     {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}

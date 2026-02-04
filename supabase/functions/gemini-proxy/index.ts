@@ -266,11 +266,15 @@ async function handleFetchCompanyData(cnpj: string) {
 }
 
 async function handleIdentifyNiche(model: any, text: string) {
-    const prompt = `Analise o seguinte conteúdo de perfil (pode ser de Instagram, LinkedIn ou site) e identifique o NICHO de mercado e a LOCALIDADE (Cidade/Estado) se houver.
+    const prompt = `Você é um especialista em segmentação de mercado. Analise o seguinte conteúdo de perfil: "${text.substring(0, 5000)}".
     
-    Retorne APENAS um JSON: {"niche": "...", "location": "..."}.
+    Tarefa:
+    1. Identifique o NICHO comercial (Ex: "Energia Solar", "Arquitetura de Interiores", "Venda de Equipamentos Cinematográficos").
+    2. Identifique a LOCALIDADE principal (Cidade/Estado) se houver.
     
-    Texto: ${text.substring(0, 5000)}`;
+    IMPORTANTE: O nicho deve ser uma frase curta que sirva como termo de pesquisa no Google.
+    
+    Retorne APENAS um JSON: {"niche": "...", "location": "..."}.`;
 
     const res = await model.generateContent(prompt);
     return safeJsonParse(res.response.text());
