@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedRequestUF, setSelectedRequestUF] = useState<string>('');
@@ -98,7 +99,8 @@ const App: React.FC = () => {
         const orgId = myProfile?.organization_id;
 
         if (orgId) {
-          loadLeads({ ...user, organization_id: orgId });
+          setUserProfile(myProfile);
+          loadLeads(myProfile);
           loadStats(orgId);
           loadAvailableStates(orgId);
           loadRanking(orgId);
@@ -106,7 +108,6 @@ const App: React.FC = () => {
           loadOrganization(orgId);
           if (myProfile?.theme) setUserTheme(myProfile.theme);
         } else if (isAdmin) {
-          // Se for admin mas não tiver org_id ainda (caso de migração)
           loadLeads(user);
         }
       } else if (!isAuthenticated) {
@@ -154,8 +155,8 @@ const App: React.FC = () => {
       const leadChannel = supabase
         .channel('leads_realtime_dashboard')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
-          if (user.organization_id) {
-            const orgId = user.organization_id;
+          if (userProfile?.organization_id) {
+            const orgId = userProfile.organization_id;
             loadRanking(orgId);
             loadStats(orgId);
             loadDashboardData(orgId);
@@ -267,7 +268,7 @@ const App: React.FC = () => {
     setIsEnriching(true);
 
     try {
-      if (!supabase || !user?.organization_id) {
+      if (!supabase || !userProfile?.organization_id) {
         alert("Erro: Conexão ou perfil organizacional não detectado.");
         setIsEnriching(false);
         return;
@@ -276,7 +277,7 @@ const App: React.FC = () => {
       const { data: remoteLeads, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('organization_id', user.organization_id)
+        .eq('organization_id', userProfile.organization_id)
         .or('status.eq.pending,status.eq.processing,status.eq.failed,and(status.eq.enriched,email.is.null)')
         .limit(100);
 
@@ -315,9 +316,9 @@ const App: React.FC = () => {
         setIsEnriching(false);
         setStatusMessage('');
       }, 2000);
-      if (user?.organization_id) {
-        loadLeads(user);
-        loadStats(user.organization_id);
+      if (userProfile?.organization_id) {
+        loadLeads(userProfile);
+        loadStats(userProfile.organization_id);
       }
     }
   };
@@ -328,11 +329,11 @@ const App: React.FC = () => {
       const leadsWithUser = newLeads.map(l => ({
         ...l,
         userId: isAdmin ? null : user.id,
-        organizationId: user.organization_id
+        organizationId: userProfile?.organization_id
       }));
       await leadService.upsertLeads(leadsWithUser);
-      loadLeads(user);
-      if (user.organization_id) loadStats(user.organization_id);
+      loadLeads(userProfile || user);
+      if (userProfile?.organization_id) loadStats(userProfile.organization_id);
     } catch (error) {
       alert("Erro ao salvar novos leads.");
     }
@@ -345,12 +346,12 @@ const App: React.FC = () => {
       const leadToSave = {
         ...updatedLead,
         userId: updatedLead.userId || user.id,
-        organizationId: updatedLead.organizationId || user.organization_id
+        organizationId: updatedLead.organizationId || userProfile?.organization_id
       };
       await leadService.upsertLeads([leadToSave]);
-      if (user.organization_id) {
-        loadStats(user.organization_id);
-        loadRanking(user.organization_id);
+      if (userProfile?.organization_id) {
+        loadStats(userProfile.organization_id);
+        loadRanking(userProfile.organization_id);
       }
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
@@ -363,7 +364,7 @@ const App: React.FC = () => {
     try {
       await leadService.deleteLead(leadId);
       setLeads(prev => prev.filter(l => l.id !== leadId));
-      if (user.organization_id) loadStats(user.organization_id);
+      if (userProfile?.organization_id) loadStats(userProfile.organization_id);
     } catch (error) {
       alert("Erro ao excluir lead.");
     }
@@ -375,12 +376,12 @@ const App: React.FC = () => {
   };
 
   const handleRequestLeads = async (uf?: string) => {
-    if (!user || !user.organization_id) return;
+    if (!user || !userProfile?.organization_id) return;
     setIsLoading(true);
     try {
       await leadService.requestNewLeads(user.id, uf);
-      loadLeads(user);
-      loadStats(user.organization_id);
+      loadLeads(userProfile);
+      loadStats(userProfile.organization_id);
     } catch (error) {
       alert(`Erro ao solicitar leads: ${error?.message}`);
     } finally {
