@@ -6,25 +6,28 @@ import {
     Users, Activity, BarChart3, ShieldAlert, Clock,
     Mail, CheckCircle2, RefreshCw, Trophy, Target,
     TrendingUp, AlertTriangle, Search, MessageSquare,
-    Zap, Ban
+    Zap, Ban, Link as LinkIcon, Copy, UserPlus
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 interface AdminDashboardProps {
     adminEmail: string;
     adminId?: string;
+    organizationId?: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId, organizationId }) => {
     const [allLeads, setAllLeads] = useState<Lead[]>([]);
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [stats, setStats] = useState({ total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeView, setActiveView] = useState<'overview' | 'audit'>('overview');
+    const [activeView, setActiveView] = useState<'overview' | 'audit' | 'invites'>('overview');
     const [auditSearch, setAuditSearch] = useState('');
     const [auditPage, setAuditPage] = useState(0);
     const [hasMoreAudit, setHasMoreAudit] = useState(true);
+    const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+    const [generatedInvite, setGeneratedInvite] = useState<string | null>(null);
     const PAGE_SIZE = 50;
 
     useEffect(() => {
@@ -51,7 +54,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
             const [leadsData, profilesData, globalStats] = await Promise.all([
                 leadService.getAdminLeads(0, PAGE_SIZE),
                 leadService.getAllProfiles(),
-                leadService.getStats()
+                leadService.getStats(organizationId || "")
             ]);
 
             // Ghost user detection
@@ -125,6 +128,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
         return Object.entries(reasons).sort((a, b) => b[1] - a[1]);
     }, [allLeads]);
 
+    const generateInvite = async () => {
+        setIsGeneratingInvite(true);
+        try {
+            if (!organizationId || !adminId) throw new Error("Contexto organizacional não detectado");
+
+            // Create invite record
+            const { data, error } = await supabase
+                .from('organization_invites')
+                .insert({
+                    organization_id: organizationId,
+                    inviter_id: adminId,
+                    email: 'vendedor@invite.br', // Generic for the link
+                })
+                .select('token')
+                .single();
+
+            if (error) throw error;
+
+            const inviteLink = `${window.location.origin}/register?invite=${data.token}`;
+            setGeneratedInvite(inviteLink);
+        } catch (error) {
+            console.error("Erro ao gerar convite:", error);
+            alert("Erro ao gerar link de convite.");
+        } finally {
+            setIsGeneratingInvite(false);
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        alert("Link copiado para a área de transferência!");
+    };
+
     if (isLoading && allLeads.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -168,6 +204,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                         className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${activeView === 'audit' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         AUDITORIA
+                    </button>
+                    <button
+                        onClick={() => setActiveView('invites')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${activeView === 'invites' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        CONVITES
                     </button>
                 </div>
             </header>
@@ -439,6 +481,53 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, adminId }) 
                                 >
                                     Carregar mais auditorias
                                 </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeView === 'invites' && (
+                <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-10 animate-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto text-center">
+                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[28px] flex items-center justify-center mx-auto mb-6">
+                        <UserPlus size={40} />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2">Convidar Novo Vendedor</h3>
+                    <p className="text-slate-500 mb-8 font-medium">
+                        Gere um link exclusivo para que um novo vendedor se junte à sua organização.
+                        Qualquer pessoa com este link poderá se registrar e ter acesso aos leads da sua empresa.
+                    </p>
+
+                    <div className="space-y-4">
+                        <button
+                            onClick={generateInvite}
+                            disabled={isGeneratingInvite}
+                            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                        >
+                            {isGeneratingInvite ? (
+                                <RefreshCw className="animate-spin" size={20} />
+                            ) : (
+                                <Zap size={20} />
+                            )}
+                            GERAR NOVO LINK DE ACESSO
+                        </button>
+
+                        {generatedInvite && (
+                            <div className="mt-8 p-6 bg-emerald-50 border border-emerald-100 rounded-3xl animate-in zoom-in-95 duration-300">
+                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3 text-left">Link Gerado com Sucesso</p>
+                                <div className="flex items-center gap-2 bg-white p-2 pl-4 rounded-xl border border-emerald-100">
+                                    <code className="flex-1 text-left text-xs font-bold text-slate-600 truncate">
+                                        {generatedInvite}
+                                    </code>
+                                    <button
+                                        onClick={() => copyToClipboard(generatedInvite)}
+                                        className="p-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all shadow-md active:scale-95"
+                                        title="Copiar Link"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                </div>
+                                <p className="mt-4 text-[10px] text-emerald-600/70 font-bold uppercase">Este link expira em 7 dias.</p>
                             </div>
                         )}
                     </div>

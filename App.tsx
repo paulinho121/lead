@@ -467,7 +467,11 @@ const App: React.FC = () => {
               }} />
             )}
             {activeTab === AppTab.ADMIN && isAdmin && (
-              <AdminDashboard adminEmail={user.email} adminId={user.id} />
+              <AdminDashboard
+                adminEmail={user.email}
+                adminId={user.id}
+                organizationId={userProfile?.organization_id}
+              />
             )}
             {activeTab === AppTab.REUNIAO && (
               <MeetingRoom userEmail={user?.email || ''} userName={user?.user_metadata?.fullname || 'Vendedor'} />

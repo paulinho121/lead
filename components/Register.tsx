@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, User, ShieldCheck, Sparkles, Building2, Phone } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, ArrowRight, User, ShieldCheck, Sparkles, Building2, Phone, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 interface RegisterProps {
@@ -15,6 +15,34 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onBackToLogin }) => {
         password: '',
         confirmPassword: ''
     });
+    const [inviteData, setInviteData] = useState<{ orgId: string, orgName: string } | null>(null);
+
+    useEffect(() => {
+        const checkInvite = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('invite');
+            if (!token || !supabase) return;
+
+            const { data, error } = await supabase
+                .from('organization_invites')
+                .select(`
+                    organization_id,
+                    organizations (name)
+                `)
+                .eq('token', token)
+                .eq('status', 'pending')
+                .gt('expires_at', new Date().toISOString())
+                .single();
+
+            if (data && !error) {
+                setInviteData({
+                    orgId: data.organization_id,
+                    orgName: (data as any).organizations?.name || 'sua organização'
+                });
+            }
+        };
+        checkInvite();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,7 +53,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onBackToLogin }) => {
         }
         setIsLoading(true);
 
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
             email: formData.email,
             password: formData.password,
             options: {
@@ -34,6 +62,22 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onBackToLogin }) => {
                 }
             }
         });
+
+        if (signUpData.user && inviteData) {
+            // Update profile with orgId if invited
+            await supabase
+                .from('profiles')
+                .update({ organization_id: inviteData.orgId })
+                .eq('id', signUpData.user.id);
+
+            // Mark invite as used
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('invite');
+            await supabase
+                .from('organization_invites')
+                .update({ status: 'accepted' })
+                .eq('token', token);
+        }
 
         if (error) {
             alert(`Erro ao criar conta: ${error.message}`);
@@ -58,7 +102,16 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onBackToLogin }) => {
                         <img src="/logo.png" alt="MCI Logo" className="w-full h-full object-contain scale-110" />
                     </div>
                     <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Criação de Conta</h2>
-                    <p className="text-[var(--text-muted)] text-sm mt-1 font-medium">Junte-se à equipe de vendas MCI LeadPro.</p>
+                    <p className="text-[var(--text-muted)] text-sm mt-1 font-medium">
+                        {inviteData
+                            ? `Você foi convidado para a equipe ${inviteData.orgName}.`
+                            : 'Junte-se à equipe de vendas MCI LeadPro.'}
+                    </p>
+                    {inviteData && (
+                        <div className="mt-4 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-2 border border-emerald-100">
+                            <CheckCircle2 size={14} /> CONVITE ATIVO: {inviteData.orgName}
+                        </div>
+                    )}
                 </div>
 
                 {/* Register Card */}
