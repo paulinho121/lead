@@ -189,6 +189,36 @@ export const leadService = {
         if (error) throw error;
     },
 
+    async getOrganizationApiKeys(orgId: string): Promise<{ provider: string, api_key: string }[]> {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('organization_api_keys')
+            .select('provider, api_key')
+            .eq('organization_id', orgId);
+
+        if (error) return [];
+        // Mask keys on fetch for security - though in BYOK they usually want to see them
+        // For now we show a mask so they know it exists
+        return (data || []).map(k => ({
+            provider: k.provider,
+            api_key: '****************'
+        }));
+    },
+
+    async saveOrganizationApiKey(orgId: string, provider: string, key: string): Promise<void> {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('organization_api_keys')
+            .upsert({
+                organization_id: orgId,
+                provider,
+                api_key: key,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'organization_id,provider' });
+
+        if (error) throw error;
+    },
+
     async getMessages(userId: string, targetId: string): Promise<any[]> {
         if (!supabase) return [];
         const { data, error } = await supabase

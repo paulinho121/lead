@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Building2, Save, Sparkles, MessageSquare, Target, ShieldCheck } from 'lucide-react';
+import { Building2, Save, Sparkles, MessageSquare, Target, ShieldCheck, Key, Zap, Globe, Cpu } from 'lucide-react';
 import { Organization } from '../types';
 import { leadService } from '../services/dbService';
 
@@ -21,12 +21,27 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
     });
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [apiKeys, setApiKeys] = useState<{ provider: string, api_key: string }[]>([]);
+    const [isLoadingKeys, setIsLoadingKeys] = useState(false);
 
     useEffect(() => {
         if (organization) {
             setFormData(organization);
+            loadApiKeys(organization.id);
         }
     }, [organization]);
+
+    const loadApiKeys = async (orgId: string) => {
+        setIsLoadingKeys(true);
+        try {
+            const keys = await leadService.getOrganizationApiKeys(orgId);
+            setApiKeys(keys);
+        } catch (error) {
+            console.error("Erro ao carregar chaves:", error);
+        } finally {
+            setIsLoadingKeys(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -38,6 +53,14 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
         setIsSaving(true);
         try {
             await leadService.updateOrganization(formData);
+
+            // Save API Keys
+            for (const key of apiKeys) {
+                if (key.api_key && !key.api_key.includes('****')) {
+                    await leadService.saveOrganizationApiKey(organization!.id, key.provider, key.api_key);
+                }
+            }
+
             onUpdate(formData as Organization);
             setMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
         } catch (error) {
@@ -46,6 +69,16 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
             setIsSaving(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
+    };
+
+    const handleKeyChange = (provider: string, value: string) => {
+        setApiKeys(prev => {
+            const existing = prev.find(k => k.provider === provider);
+            if (existing) {
+                return prev.map(k => k.provider === provider ? { ...k, api_key: value } : k);
+            }
+            return [...prev, { provider, api_key: value }];
+        });
     };
 
     return (
@@ -142,8 +175,52 @@ const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ organizatio
                         </div>
                     </div>
 
+                    {/* Gestão de APIs */}
+                    <div className="md:col-span-2 space-y-6 pt-8 border-t border-[var(--border)]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-[var(--primary)]">
+                                <Key size={20} />
+                                <h3 className="font-black uppercase tracking-widest text-xs">Conectividade e APIs (BYOK)</h3>
+                            </div>
+                            <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase">
+                                <Zap size={12} /> Alta Performance
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-[var(--text-muted)] font-medium mb-4">
+                            Sua organização pode usar chaves próprias. Isso garante que você tenha controle total sobre os custos e limites das IAs.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[
+                                { id: 'gemini', name: 'Google Gemini', icon: <Sparkles size={16} />, placeholder: 'AIzaSy...' },
+                                { id: 'openai', name: 'OpenAI GPT-4', icon: <Cpu size={16} />, placeholder: 'sk-...' },
+                                { id: 'deepseek', name: 'DeepSeek AI', icon: <Globe size={16} />, placeholder: 'ds-...' }
+                            ].map(provider => {
+                                const keyData = apiKeys.find(k => k.provider === provider.id);
+                                return (
+                                    <div key={provider.id} className="p-5 bg-[var(--bg-main)]/30 rounded-2xl border border-[var(--border)] space-y-3">
+                                        <div className="flex items-center gap-2 font-bold text-sm text-[var(--text-main)]">
+                                            {provider.icon}
+                                            {provider.name}
+                                        </div>
+                                        <div className="relative group">
+                                            <input
+                                                type="password"
+                                                placeholder={provider.placeholder}
+                                                value={keyData?.api_key || ''}
+                                                onChange={(e) => handleKeyChange(provider.id, e.target.value)}
+                                                className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-[var(--border)] rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* Descrição Longa */}
-                    <div className="md:col-span-2 space-y-4 pt-4 border-t border-[var(--border)]">
+                    <div className="md:col-span-2 space-y-4 pt-8 border-t border-[var(--border)]">
                         <div className="flex items-center gap-3 text-[var(--primary)] mb-2">
                             <Target size={20} />
                             <h3 className="font-black uppercase tracking-widest text-xs">Objetivo e Contexto</h3>
