@@ -424,14 +424,6 @@ const App: React.FC = () => {
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         userTheme={userTheme}
-        availableStates={availableStates}
-        selectedRequestUF={selectedRequestUF}
-        setSelectedRequestUF={setSelectedRequestUF}
-        handleRequestLeads={handleRequestLeads}
-        processQueue={processQueue}
-        isEnriching={isEnriching}
-        leads={leads}
-        isLoading={isLoading}
         statusMessage={statusMessage}
         handleLogout={handleLogout}
       />
@@ -439,7 +431,7 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-main)]">
         <TopBar
           activeTab={activeTab}
-          user={user}
+          user={userProfile || user}
           leads={leads}
           isEnriching={isEnriching}
           processQueue={processQueue}
@@ -448,6 +440,11 @@ const App: React.FC = () => {
           setIsThemeSelectorOpen={setIsThemeSelectorOpen}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
+          availableStates={availableStates}
+          selectedRequestUF={selectedRequestUF}
+          setSelectedRequestUF={setSelectedRequestUF}
+          handleRequestLeads={handleRequestLeads}
+          isLoading={isLoading}
         />
 
         <div className="flex-1 overflow-auto p-responsive md:p-10 lg:p-12">

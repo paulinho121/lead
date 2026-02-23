@@ -14,14 +14,6 @@ interface SidebarProps {
     isMobileMenuOpen: boolean;
     setIsMobileMenuOpen: (open: boolean) => void;
     userTheme: string;
-    availableStates: string[];
-    selectedRequestUF: string;
-    setSelectedRequestUF: (uf: string) => void;
-    handleRequestLeads: (uf?: string) => void;
-    processQueue: () => void;
-    isEnriching: boolean;
-    leads: Lead[];
-    isLoading: boolean;
     statusMessage: string;
     handleLogout: () => void;
 }
@@ -33,14 +25,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     isMobileMenuOpen,
     setIsMobileMenuOpen,
     userTheme,
-    availableStates,
-    selectedRequestUF,
-    setSelectedRequestUF,
-    handleRequestLeads,
-    processQueue,
-    isEnriching,
-    leads,
-    isLoading,
     statusMessage,
     handleLogout
 }) => {
@@ -165,99 +149,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {/* Status & Actions - Visible only on Mobile Drawer */}
                     <div className="md:hidden">
                         <div className="flex items-center justify-between px-2 mb-3">
-                            <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Ações do Sistema</div>
-                            <div className="flex items-center gap-1">
-                                <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                                <span className="text-[8px] font-black text-emerald-600 uppercase">Online</span>
-                            </div>
+                            <div className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest opacity-80">Sistema Online</div>
                         </div>
-
-                        {isAdmin && (
-                            <div className="space-y-2 mb-4">
-                                <button
-                                    onClick={() => exportLeadsToCSV(leads)}
-                                    disabled={leads.length === 0}
-                                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 py-2.5 px-4 rounded-xl text-xs font-bold"
-                                >
-                                    <Download size={14} /> EXPORTAR CSV
-                                </button>
-                                <button
-                                    onClick={processQueue}
-                                    disabled={isEnriching || leads.filter(l => l.status === 'pending' || l.status === 'failed' || (l.status === 'enriched' && !l.email)).length === 0}
-                                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-bold"
-                                >
-                                    {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                                    FILA MASTER
-                                </button>
-                            </div>
-                        )}
                     </div>
-
-                    {/* Salesperson Specific Actions */}
-                    {!isAdmin && (
-                        <div className="space-y-3 pt-1">
-                            {/* Indicador de Capacidade */}
-                            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-[var(--border)]">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Capacidade de Gestão</span>
-                                    <span className={`text-[10px] font-black ${leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 10 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                        {leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length}/10
-                                    </span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full transition-all duration-500 ${leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 8 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                        style={{ width: `${Math.min((leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length / 10) * 100, 100)}%` }}
-                                    />
-                                </div>
-                                <p className="text-[8px] text-slate-400 font-bold mt-1.5 leading-tight italic">
-                                    {leads.filter(l => l.status === 'enriched' && !isLeadFullyManaged(l)).length >= 10
-                                        ? "⚠️ No limite! Exclua ou desqualifique leads para liberar espaço."
-                                        : "Você pode solicitar novos leads enquanto tiver espaço aqui."}
-                                </p>
-                            </div>
-
-                            <div className="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-[var(--border)] shadow-sm space-y-2">
-                                <label htmlFor="uf-store-filter" className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1 cursor-pointer">
-                                    <Globe size={12} className="text-[var(--primary)]" />
-                                    Filtrar por UF
-                                </label>
-
-                                <select
-                                    id="uf-store-filter"
-                                    value={selectedRequestUF}
-                                    onChange={(e) => setSelectedRequestUF(e.target.value)}
-                                    className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg py-2 px-2.5 text-[11px] font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="">Brasil (Tudo)</option>
-                                    {availableStates.map(uf => (
-                                        <option key={uf} value={uf}>{uf.toUpperCase()}</option>
-                                    ))}
-                                </select>
-
-                                <button
-                                    onClick={() => { handleRequestLeads(selectedRequestUF); setIsMobileMenuOpen(false); }}
-                                    disabled={isLoading}
-                                    className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--text-on-primary)] py-3 px-4 rounded-lg text-[10px] font-black hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-[var(--primary)]/20 disabled:opacity-50"
-                                >
-                                    {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
-                                    SOLICITAR LEADS
-                                </button>
-                            </div>
-
-                            <button
-                                onClick={processQueue}
-                                disabled={isEnriching || leads.filter(l => (l.status === 'pending' || (l.status === 'enriched' && !l.email))).length === 0}
-                                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-[10px] font-black transition-all disabled:opacity-50 ${leads.some(l => l.status === 'pending' || (l.status === 'enriched' && !l.email))
-                                    ? 'bg-amber-600 text-white hover:bg-amber-700 animate-pulse ring-4 ring-amber-500/10'
-                                    : 'bg-slate-800 text-white hover:bg-black'
-                                    }`}
-                            >
-                                {isEnriching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                ENRIQUECER LEADS
-                            </button>
-                        </div>
-                    )}
 
                     {statusMessage && (
                         <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500">
