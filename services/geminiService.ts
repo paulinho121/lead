@@ -9,8 +9,9 @@ const getModel = (overrideKey?: string) => {
     if (!overrideKey && key) console.error("ERRO: Chave Gemini parece inválida.");
     return null;
   }
+  console.log(`[Gemini] Initializing with key: ${key.substring(0, 6)}...${key.substring(key.length - 4)}`);
   const genAI = new GoogleGenerativeAI(key);
-  return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  return genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 };
 
 async function callGemini(prompt: string, overrideKey?: string) {

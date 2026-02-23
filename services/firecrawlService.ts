@@ -25,7 +25,13 @@ export const firecrawlService = {
                 console.warn('Serper found no results, trying Jina Search fallback...');
                 // Fallback to Jina Search
                 const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(query)}`;
-                const jinaRes = await fetch(jinaSearchUrl, { headers: { 'Accept': 'text/plain' } });
+                const jinaKey = import.meta.env.VITE_JINA_API_KEY;
+                const jinaRes = await fetch(jinaSearchUrl, {
+                    headers: {
+                        'Accept': 'text/plain',
+                        ...(jinaKey ? { 'Authorization': `Bearer ${jinaKey}` } : {})
+                    }
+                });
 
                 if (jinaRes.ok) {
                     const content = await jinaRes.text();
@@ -162,10 +168,12 @@ export const firecrawlService = {
         try {
             console.log("Using Jina Search fallback for query:", query);
             const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(query + ' empresas brasil')}`;
+            const jinaKey = import.meta.env.VITE_JINA_API_KEY;
             const response = await fetch(jinaSearchUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'text/plain'
+                    'Accept': 'text/plain',
+                    ...(jinaKey ? { 'Authorization': `Bearer ${jinaKey}` } : {})
                 }
             });
 
