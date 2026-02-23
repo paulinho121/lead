@@ -5,8 +5,8 @@ import { Organization } from "../types";
 
 const getModel = (overrideKey?: string) => {
   const key = overrideKey || import.meta.env.VITE_GEMINI_API_KEY;
-  if (!key || key === 'undefined') {
-    if (!overrideKey) console.error("ERRO: Nenhuma chave Gemini disponível.");
+  if (!key || key === 'undefined' || key === 'null' || key.length < 20) {
+    if (!overrideKey && key) console.error("ERRO: Chave Gemini parece inválida.");
     return null;
   }
   const genAI = new GoogleGenerativeAI(key);
@@ -58,7 +58,7 @@ export const extractLeadsFromText = async (text: string, overrideKey?: string) =
            
            Texto: ${text.substring(0, 30000)}`;
 
-    const responseText = await callGemini(prompt);
+    const responseText = await callGemini(prompt, overrideKey);
     return safeJsonParse(responseText) || [];
   } catch (error: any) {
     console.error("Gemini Direct Error:", error);

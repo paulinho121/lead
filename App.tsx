@@ -87,38 +87,52 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      if (isAuthenticated && user) {
+      if (!isAuthenticated || !user) {
+        setLeads([]);
+        setProfiles([]);
+        setRankingLeads([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
         // 1. Sync and get LATEST profile from DB (crucial for organization_id)
         await leadService.syncProfile(user.id, user.email!, user.user_metadata?.fullname);
 
         // Fetch profiles to find the exact one for current user
         const allProfiles = await leadService.getAllProfiles();
-        setProfiles(allProfiles); // <-- THIS WAS MISSING
+        setProfiles(allProfiles);
 
         const myProfile = allProfiles.find(p => p.id === user.id);
         const orgId = myProfile?.organization_id;
 
         if (orgId) {
           setUserProfile(myProfile);
-          loadLeads(myProfile);
-          loadStats(orgId);
-          loadAvailableStates(orgId);
-          loadRanking(orgId);
-          loadDashboardData(orgId);
-          loadOrganization(orgId);
+          await Promise.all([
+            loadLeads(myProfile),
+            loadStats(orgId),
+            loadAvailableStates(orgId),
+            loadRanking(orgId),
+            loadDashboardData(orgId),
+            loadOrganization(orgId)
+          ]);
           if (myProfile?.theme) setUserTheme(myProfile.theme);
         } else if (isAdmin) {
-          loadLeads(user);
+          await loadLeads(user);
+        } else {
+          console.warn("User has no organization_id");
+          // Optionally redirect to a "No Organization" state
         }
-      } else if (!isAuthenticated) {
-        setLeads([]);
-        setProfiles([]);
-        setRankingLeads([]);
+      } catch (error) {
+        console.error("Failed to initialize app:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     initApp();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isAdmin]); // Added isAdmin to deps
 
   useEffect(() => {
     if (user) {

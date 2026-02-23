@@ -6,6 +6,7 @@ export interface FirecrawlResult {
     url: string;
     email?: string;
     website?: string;
+    markdown?: string;
 }
 
 export const firecrawlService = {
@@ -14,7 +15,7 @@ export const firecrawlService = {
         if (!apiKey) return null;
 
         try {
-            // 1. Search (Navegador pode chamar a busca da Firecrawl direto)
+            // 1. Search
             const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
                 method: 'POST',
                 headers: {
@@ -28,23 +29,40 @@ export const firecrawlService = {
                 })
             });
 
-            if (!searchResponse.ok) {
-                if (searchResponse.status === 402) throw new Error('Firecrawl 402: Payment Required');
+            let searchData: any = { data: [] };
+            if (searchResponse.ok) {
+                searchData = await searchResponse.json().catch(() => ({ data: [] }));
+            }
+
+            if (!searchResponse.ok || !searchData.data || searchData.data.length === 0) {
+                if (searchResponse.status === 402) console.warn('Firecrawl 402: Payment Required. Falling back to Jina Search...');
+
+                // Fallback to Jina Search
+                const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(`${razaoSocial} ${cnpj} site oficial`)}`;
+                const jinaRes = await fetch(jinaSearchUrl, { headers: { 'Accept': 'text/plain' } });
+
+                if (jinaRes.ok) {
+                    const content = await jinaRes.text();
+                    const urlMatch = content.match(/https?:\/\/[^\s\)]+/);
+                    if (urlMatch) {
+                        const officialUrl = urlMatch[0];
+                        const markdown = await jinaService.scrapeUrl(officialUrl) || "";
+                        return { url: officialUrl, website: officialUrl, markdown };
+                    }
+                }
                 return null;
             }
-            const searchData = await searchResponse.json();
-            if (!searchData.data || searchData.data.length === 0) return null;
 
             const officialUrl = searchData.data[0].url;
 
-            // 2. Scrape via Jina (Já configurado para rodar no navegador)
+            // 2. Scrape via Jina
             const markdown = await jinaService.scrapeUrl(officialUrl);
 
             return {
                 url: officialUrl,
                 website: officialUrl,
-                markdown: markdown
-            } as any;
+                markdown: markdown || ""
+            };
 
         } catch (error: any) {
             console.error("Firecrawl Error:", error);
@@ -80,6 +98,10 @@ export const firecrawlService = {
             });
 
             if (!response.ok) {
+                if (response.status === 402) {
+                    console.warn("Firecrawl 402: Payment Required. Returning null.");
+                    return null;
+                }
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `Firecrawl Error ${response.status}`);
             }
