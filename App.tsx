@@ -393,11 +393,17 @@ const App: React.FC = () => {
     if (!user || !userProfile?.organization_id) return;
     setIsLoading(true);
     try {
-      await leadService.requestNewLeads(user.id, uf);
-      loadLeads(userProfile);
-      loadStats(userProfile.organization_id);
-    } catch (error) {
-      alert(`Erro ao solicitar leads: ${error?.message}`);
+      const count = await leadService.requestNewLeads(user.id, uf);
+      if (count > 0) {
+        alert(`${count} novo(s) lead(s) atribuído(s) com sucesso!`);
+        loadLeads(userProfile);
+        loadStats(userProfile.organization_id);
+        loadAvailableStates(userProfile.organization_id);
+      } else {
+        alert("Nenhum lead disponível para os filtros selecionados.");
+      }
+    } catch (error: any) {
+      alert(`Erro ao solicitar leads: ${error?.message || error}`);
     } finally {
       setIsLoading(false);
     }

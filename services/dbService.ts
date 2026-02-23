@@ -246,9 +246,9 @@ export const leadService = {
         if (error) throw error;
     },
 
-    async requestNewLeads(vendedorId: string, uf?: string): Promise<void> {
-        if (!supabase) return;
-        const { error } = await supabase.rpc('solicitar_novos_leads', {
+    async requestNewLeads(vendedorId: string, uf?: string): Promise<number> {
+        if (!supabase) return 0;
+        const { data, error } = await supabase.rpc('solicitar_novos_leads', {
             vendedor_id: vendedorId,
             p_uf: uf || null
         });
@@ -256,6 +256,7 @@ export const leadService = {
             console.error('Error requesting leads:', error);
             throw error;
         }
+        return data || 0;
     },
 
     async upsertLeads(leads: Lead[]): Promise<void> {
