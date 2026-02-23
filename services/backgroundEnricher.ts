@@ -15,28 +15,27 @@ export const backgroundEnricher = {
         onLog('info', `Iniciando processamento em lote de ${leadsToProcess.length} leads...`);
 
         // Busca chaves customizadas da organização
-        let customGeminiKey: string | undefined;
+        let customKeys: { gemini?: string, serper?: string, firecrawl?: string } = {};
         if (org) {
             try {
-                const keys = await (await import('./dbService')).leadService.getOrganizationApiKeys(org.id);
-                // No processamento real, precisamos da chave original, não da mascarada. 
-                // Nota: O método getOrganizationApiKeys atual mascara com ****. 
-                // Precisamos de um método que pegue a chave real apenas para o backend de processamento.
-
-                // Vamos buscar a chave real diretamente se for necessário
-                const { data } = await (await import('./supabase')).supabase
+                const { data: keys } = await (await import('./supabase')).supabase
                     .from('organization_api_keys')
-                    .select('api_key')
-                    .eq('organization_id', org.id)
-                    .eq('provider', 'gemini')
-                    .single();
+                    .select('provider, api_key')
+                    .eq('organization_id', org.id);
 
-                if (data?.api_key) {
-                    customGeminiKey = data.api_key;
-                    onLog('success', 'Usando chave Gemini customizada do cliente.');
+                if (keys) {
+                    keys.forEach(k => {
+                        if (k.provider === 'gemini') customKeys.gemini = k.api_key;
+                        if (k.provider === 'serper') customKeys.serper = k.api_key;
+                        if (k.provider === 'firecrawl') customKeys.firecrawl = k.api_key;
+                    });
+
+                    if (customKeys.gemini) onLog('success', 'Chave Gemini customizada carregada.');
+                    if (customKeys.serper) onLog('success', 'Chave Serper customizada carregada.');
+                    if (customKeys.firecrawl) onLog('success', 'Chave Firecrawl customizada carregada.');
                 }
             } catch (e) {
-                console.warn("Usando chave padrão da plataforma.");
+                console.warn("Erro ao carregar chaves da org, usando padrões da plataforma.");
             }
         }
 
@@ -60,7 +59,7 @@ export const backgroundEnricher = {
                     if (!email) {
                         try {
                             onLog('info', `IA buscando site oficial para ${data.razao_social}...`);
-                            const scrap = await firecrawlService.searchAndScrape(data.razao_social, lead.cnpj);
+                            const scrap = await firecrawlService.searchAndScrape(data.razao_social, lead.cnpj, customKeys);
 
                             if (scrap?.website) {
                                 onLog('success', `Site oficial mapeado: ${scrap.website}`);
@@ -68,7 +67,7 @@ export const backgroundEnricher = {
 
                                 if ((scrap as any).markdown) {
                                     onLog('info', 'Extraindo contatos do conteúdo do site...');
-                                    const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown, customGeminiKey);
+                                    const extra = await extractContactFromWeb(data.razao_social, (scrap as any).markdown, customKeys.gemini);
                                     if (extra?.email) {
                                         email = extra.email;
                                         onLog('success', `E-mail encontrado via Scraping: ${email}`);
@@ -87,12 +86,12 @@ export const backgroundEnricher = {
                         // Fallback to normal Gemini discovery if still no email
                         if (!email) {
                             onLog('info', `Gemini tentando dedução para ${data.razao_social}...`);
-                            email = await discoverEmail(data.razao_social, lead.cnpj, customGeminiKey);
+                            email = await discoverEmail(data.razao_social, lead.cnpj, customKeys.gemini);
                         }
                     }
 
                     const isInactive = data.situacao_cadastral?.includes('BAIXADA') || data.situacao_cadastral?.includes('INAPTA');
-                    const score = !isInactive ? await scoreLead(data, org, customGeminiKey) : 0;
+                    const score = !isInactive ? await scoreLead(data, org, customKeys.gemini) : 0;
 
                     const enrichedLead: Lead = {
                         ...lead,

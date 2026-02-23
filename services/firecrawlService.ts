@@ -1,6 +1,7 @@
 
 import { jinaService } from './jinaService';
 import { scraperService } from './scraperService';
+import { serperService } from './serperService';
 
 export interface FirecrawlResult {
     url: string;
@@ -10,52 +11,50 @@ export interface FirecrawlResult {
 }
 
 export const firecrawlService = {
-    async searchAndScrape(razaoSocial: string, cnpj: string): Promise<FirecrawlResult | null> {
-        const apiKey = import.meta.env.VITE_FIRECRAWL_API_KEY;
-        if (!apiKey) return null;
-
+    async searchAndScrape(razaoSocial: string, cnpj: string, customKeys?: { serper?: string, firecrawl?: string }): Promise<FirecrawlResult | null> {
         try {
-            // 1. Search
-            const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    query: `${razaoSocial} ${cnpj} site oficial`,
-                    limit: 1,
-                    lang: 'pt'
-                })
-            });
+            // 1. Search via Serper (Priority)
+            const query = `${razaoSocial} ${cnpj} site oficial`;
+            const serperResults = await serperService.search(query, 1, customKeys?.serper);
 
-            let searchData: any = { data: [] };
-            if (searchResponse.ok) {
-                searchData = await searchResponse.json().catch(() => ({ data: [] }));
-            }
+            let officialUrl: string | undefined;
 
-            if (!searchResponse.ok || !searchData.data || searchData.data.length === 0) {
-                if (searchResponse.status === 402) console.warn('Firecrawl 402: Payment Required. Falling back to Jina Search...');
-
+            if (serperResults && serperResults.length > 0) {
+                officialUrl = serperResults[0].url;
+            } else {
+                console.warn('Serper found no results, trying Jina Search fallback...');
                 // Fallback to Jina Search
-                const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(`${razaoSocial} ${cnpj} site oficial`)}`;
+                const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(query)}`;
                 const jinaRes = await fetch(jinaSearchUrl, { headers: { 'Accept': 'text/plain' } });
 
                 if (jinaRes.ok) {
                     const content = await jinaRes.text();
                     const urlMatch = content.match(/https?:\/\/[^\s\)]+/);
                     if (urlMatch) {
-                        const officialUrl = urlMatch[0];
-                        const markdown = await jinaService.scrapeUrl(officialUrl) || "";
-                        return { url: officialUrl, website: officialUrl, markdown };
+                        officialUrl = urlMatch[0];
                     }
                 }
-                return null;
             }
 
-            const officialUrl = searchData.data[0].url;
+            if (!officialUrl) {
+                // Try Firecrawl Search as last resort if credits exist
+                const firecrawlKey = customKeys?.firecrawl || import.meta.env.VITE_FIRECRAWL_API_KEY;
+                if (firecrawlKey) {
+                    const fcRes = await fetch('https://api.firecrawl.dev/v1/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${firecrawlKey}` },
+                        body: JSON.stringify({ query, limit: 1 })
+                    });
+                    if (fcRes.ok) {
+                        const fcData = await fcRes.json();
+                        officialUrl = fcData.data?.[0]?.url;
+                    }
+                }
+            }
 
-            // 2. Scrape via Jina
+            if (!officialUrl) return null;
+
+            // 2. Scrape via Jina (Free & Efficient)
             const markdown = await jinaService.scrapeUrl(officialUrl);
 
             return {
@@ -65,12 +64,12 @@ export const firecrawlService = {
             };
 
         } catch (error: any) {
-            console.error("Firecrawl Error:", error);
+            console.error("Enrichment Search Error:", error);
             throw error;
         }
     },
 
-    async scrapeUrl(url: string): Promise<string | null> {
+    async scrapeUrl(url: string, customFirecrawlKey?: string): Promise<string | null> {
         // Tenta Jina primeiro (Ela costuma aceitar chamadas de navegador melhor que a Firecrawl)
         try {
             const jinaResult = await jinaService.scrapeUrl(url);
@@ -80,7 +79,7 @@ export const firecrawlService = {
         }
 
         // Fallback para Firecrawl (direto)
-        const apiKey = import.meta.env.VITE_FIRECRAWL_API_KEY;
+        const apiKey = customFirecrawlKey || import.meta.env.VITE_FIRECRAWL_API_KEY;
         if (!apiKey) return null;
 
         try {
@@ -113,8 +112,23 @@ export const firecrawlService = {
         }
     },
 
-    async searchByNiche(query: string): Promise<any[]> {
-        const apiKey = import.meta.env.VITE_FIRECRAWL_API_KEY;
+    async searchByNiche(query: string, customKeys?: { serper?: string, firecrawl?: string }): Promise<any[]> {
+        // 1. Serper Search (Priority)
+        try {
+            const serperResults = await serperService.search(`${query} empresas brasil`, 15, customKeys?.serper);
+            if (serperResults.length > 0) {
+                return serperResults.map(r => ({
+                    url: r.url,
+                    razaoSocial: r.title,
+                    snippet: r.snippet
+                }));
+            }
+        } catch (err) {
+            console.error("Serper Niche Search Error:", err);
+        }
+
+        // 2. Firecrawl Search (Fallback 1)
+        const apiKey = customKeys?.firecrawl || import.meta.env.VITE_FIRECRAWL_API_KEY;
 
         if (apiKey) {
             try {
@@ -144,7 +158,7 @@ export const firecrawlService = {
             }
         }
 
-        // Fallback to Jina Search if Firecrawl fails or API key is missing
+        // 3. Fallback to Jina Search if Firecrawl fails or API key is missing
         try {
             console.log("Using Jina Search fallback for query:", query);
             const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(query + ' empresas brasil')}`;
