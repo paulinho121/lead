@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <div className="flex flex-col">
                         <span className="text-[10px] text-[var(--primary)] font-black uppercase tracking-widest opacity-80 leading-none mb-1">
-                            {user?.user_metadata?.fullname || 'Vendedor Pro'}
+                            {user?.user_metadata?.fullname || 'Vendedor Pro'} {user?.display_id ? `#${user.display_id}` : ''}
                         </span>
                         <h1 className="font-black text-xl tracking-tighter text-[var(--text-main)]">
                             LeadPro <span className="text-[var(--primary)]">B2B</span>
