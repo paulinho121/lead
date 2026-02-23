@@ -25,10 +25,26 @@ export const leadService = {
         return (data || []).map(leadService.mapFromDb);
     },
 
-    async getStats(orgId: string): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number, unassigned: number }> {
+    async getStats(orgId: string, userId?: string): Promise<{ total: number, enriched: number, pending: number, failed: number, hasContact: number, unassigned: number }> {
         if (!supabase) return { total: 0, enriched: 0, pending: 0, failed: 0, hasContact: 0, unassigned: 0 };
 
         try {
+            let qTotal = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId);
+            let qEnriched = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'enriched');
+            let qPending = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['pending', 'processing']);
+            let qFailed = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'failed');
+            let qContact = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).or('email.neq."",telefone.neq.""').not('email', 'is', null);
+            let qUnassigned = supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).is('user_id', null);
+
+            if (userId) {
+                qTotal = qTotal.eq('user_id', userId);
+                qEnriched = qEnriched.eq('user_id', userId);
+                qPending = qPending.eq('user_id', userId);
+                qFailed = qFailed.eq('user_id', userId);
+                qContact = qContact.eq('user_id', userId);
+                // qUnassigned stays the same as it's for everyone
+            }
+
             const [
                 { count: total },
                 { count: enriched },
@@ -36,14 +52,7 @@ export const leadService = {
                 { count: failed },
                 { count: hasContact },
                 { count: unassigned }
-            ] = await Promise.all([
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'enriched'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['pending', 'processing']),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'failed'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).or('email.neq."",telefone.neq.""').not('email', 'is', null),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).is('user_id', null)
-            ]);
+            ] = await Promise.all([qTotal, qEnriched, qPending, qFailed, qContact, qUnassigned]);
 
             return {
                 total: total || 0,
@@ -109,21 +118,13 @@ export const leadService = {
 
     async getAvailableStates(orgId: string): Promise<string[]> {
         if (!supabase) return [];
-        const { data, error } = await supabase
-            .from('leads')
-            .select('uf')
-            .eq('organization_id', orgId)
-            .is('user_id', null)
-            .not('uf', 'is', null)
-            .neq('uf', '')
-            .limit(1000);
+        const { data, error } = await supabase.rpc('get_pool_states');
 
         if (error) {
             console.error('Error fetching available states:', error);
             return [];
         }
-        const states = Array.from(new Set(data.map(item => item.uf).filter(Boolean))).sort();
-        return states;
+        return (data as any[] || []).map(item => item.uf).sort();
     },
 
     async syncProfile(userId: string, email: string, fullname?: string): Promise<void> {

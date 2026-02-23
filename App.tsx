@@ -25,7 +25,9 @@ import OrganizationSettings from './components/OrganizationSettings';
 import { useAuth } from './hooks/useAuth';
 
 const App: React.FC = () => {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const isAdmin = user?.email === 'paulofernandoautomacao@gmail.com' || userProfile?.role === 'admin';
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +35,6 @@ const App: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedRequestUF, setSelectedRequestUF] = useState<string>('');
@@ -210,7 +211,7 @@ const App: React.FC = () => {
 
   const loadStats = async (orgId: string) => {
     try {
-      const stats = await leadService.getStats(orgId);
+      const stats = await leadService.getStats(orgId, isAdmin ? undefined : user?.id);
       setTotalLeadCount(stats.total);
       setLeadStats(stats);
     } catch (error) {
@@ -220,8 +221,12 @@ const App: React.FC = () => {
 
   const loadRanking = async (orgId: string) => {
     try {
-      const data = await leadService.getGlobalRanking(orgId);
-      setRankingLeads(data);
+      if (isAdmin) {
+        const data = await leadService.getGlobalRanking(orgId);
+        setRankingLeads(data);
+      } else {
+        setRankingLeads([]);
+      }
     } catch (e) {
       console.error(e);
     }
